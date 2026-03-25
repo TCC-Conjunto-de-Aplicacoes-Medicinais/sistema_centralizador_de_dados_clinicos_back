@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -21,7 +22,7 @@ func CassandraConnect(ips []string, localDC string, clinicaKeyspace string) *DbC
 	cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy(localDC)
 	cluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{NumRetries: 3}
 	
-	cluster.Keyspace = "sistema_core"
+	cluster.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
 	sessionCore, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatalf("Error connecting to sistema_core: %v", err)

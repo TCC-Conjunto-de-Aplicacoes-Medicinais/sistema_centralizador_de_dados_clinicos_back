@@ -4,18 +4,29 @@ import (
 	"log"
 	"net/http"
 
+	"os"
+
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 )
 
-var (
-	// TODO: ADICIONAR IP DO CASSANDRA MASTER
-	ips             = []string{"127.0.0.1"}
-	localDC         = "DC_Clinica_A"
-	clinicaKeyspace = "ks_clinica_a"
-)
-
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Aviso: Arquivo .env não encontrado. Dependendo apenas de variáveis injetadas pelo sistema.")
+	}
+
+	ips := []string{
+		os.Getenv("CASSANDRA_IP_LOCAL"),
+		os.Getenv("CASSANDRA_IP_MASTER"),
+	}
+	localDC := os.Getenv("CASSANDRA_LOCAL_DC")
+	clinicaKeyspace := os.Getenv("CASSANDRA_CLINICA_KEYSPACE")
+
+	if localDC == "" || clinicaKeyspace == "" {
+		log.Fatal("❌ Erro crítico: Configure as variáveis CASSANDRA_LOCAL_DC e CASSANDRA_CLINICA_KEYSPACE no .env desta Clínica.")
+	}
+
 	db := config.CassandraConnect(ips, localDC, clinicaKeyspace)
 	defer db.Close()
 
