@@ -12,7 +12,6 @@ import (
 )
 
 func main() {
-	// Procura o arquivo .env navegando nas pastas
 	envLoaded := false
 	for _, envPath := range []string{".env", "../.env", "../../.env", "../../../.env"} {
 		if err := godotenv.Load(envPath); err == nil {
@@ -46,8 +45,14 @@ func main() {
 	// defer db.Close()
 
 	// if db.Core == nil || db.Clinica == nil {
-    //     log.Fatal("❌ Erro crítico: Não foi possível estabelecer as sessões mínimas.")
+    //     log.Fatal("❌ Erro crítico: Não foi possível estabelecer as sessões mínimas do Cassandra.")
     // }
+
+	// Inicializa sua engine Relacional GORM
+	mariaDB := config.MariaDBConnect()
+	if mariaDB == nil {
+		log.Fatal("❌ Erro crítico: Falha ao iniciar sessão no MariaDB.")
+	}
 
 	router := gin.Default()
 

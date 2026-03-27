@@ -18,7 +18,6 @@ func InitKeycloak(url, clientID, secret, realm string) *KeycloakAuth {
 	
 	ctx := context.Background()
 
-	// Testamos a conexão tentando pegar um token via credenciais da aplicação (App Credentials)
 	_, err := client.LoginClient(ctx, clientID, secret, realm)
 	if err != nil {
 		log.Fatalf("❌ Erro ao conectar no Keycloak: %v", err)
