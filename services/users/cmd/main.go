@@ -49,13 +49,11 @@ func main() {
     //     log.Fatal("❌ Erro crítico: Não foi possível estabelecer as sessões mínimas do Cassandra.")
     // }
 
-	// Inicializa sua engine Relacional GORM
 	mariaDB := config.MariaDBConnect()
 	if mariaDB == nil {
 		log.Fatal("❌ Erro crítico: Falha ao iniciar sessão no MariaDB.")
 	}
 
-	// Executa a suíte de Migrate de todas as tabelas centralizadas
 	if err := models.RunMigrations(mariaDB); err != nil {
 		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
