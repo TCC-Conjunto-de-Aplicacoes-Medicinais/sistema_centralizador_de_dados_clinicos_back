@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 )
 
 func main() {
@@ -52,6 +53,11 @@ func main() {
 	mariaDB := config.MariaDBConnect()
 	if mariaDB == nil {
 		log.Fatal("❌ Erro crítico: Falha ao iniciar sessão no MariaDB.")
+	}
+
+	// Executa a suíte de Migrate de todas as tabelas centralizadas
+	if err := models.RunMigrations(mariaDB); err != nil {
+		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
 
 	router := gin.Default()
