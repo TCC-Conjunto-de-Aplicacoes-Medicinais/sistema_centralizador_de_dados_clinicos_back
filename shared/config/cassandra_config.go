@@ -13,29 +13,37 @@ type DbClient struct {
 	Clinica *gocql.Session
 }
 
-func CassandraConnect(ips []string, localDC string, clinicaKeyspace string) *DbClient {
-	
-	cluster := gocql.NewCluster(ips...)
-	cluster.Consistency = gocql.LocalQuorum
-	cluster.Timeout = 5 * time.Second
+func CassandraConnect() *DbClient {
+	clusterCore := gocql.NewCluster(os.Getenv("CASSANDRA_IP_MASTER"))
+	clusterCore.ProtoVersion = 4
+	clusterCore.DisableInitialHostLookup = true
+	clusterCore.IgnorePeerAddr = true
+	clusterCore.Consistency = gocql.One
+	clusterCore.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
+	clusterCore.ConnectTimeout = 60 * time.Second
+	clusterCore.Timeout = 60 * time.Second
 
-	cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy(localDC)
-	cluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{NumRetries: 3}
-	
-	cluster.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
-	sessionCore, err := cluster.CreateSession()
+	sessionCore, err := clusterCore.CreateSession()
 	if err != nil {
-		log.Fatalf("Error connecting to sistema_core: %v", err)
+		log.Fatalf("❌ Erro na Matriz (AWS): %v", err)
 	}
 
-	cluster.Keyspace = clinicaKeyspace
-	sessionClinica, err := cluster.CreateSession()
+	clusterClinica := gocql.NewCluster(os.Getenv("CASSANDRA_IP_LOCAL"))
+	clusterClinica.Keyspace = os.Getenv("CASSANDRA_CLINICA_KEYSPACE")
+	clusterClinica.Consistency = gocql.One
+	clusterClinica.ProtoVersion = 4
+	clusterClinica.DisableInitialHostLookup = true
+	clusterClinica.IgnorePeerAddr = true
+	clusterClinica.ConnectTimeout = 10 * time.Second
+	clusterClinica.Timeout = 10 * time.Second
+
+	sessionClinica, err := clusterClinica.CreateSession()
 	if err != nil {
-		log.Fatalf("Error connecting to %s: %v", clinicaKeyspace, err)
+		log.Printf("⚠️ Clínica Local offline: %v", err)
 	}
-	
+
 	return &DbClient{
-		Core: sessionCore,
+		Core:    sessionCore,
 		Clinica: sessionClinica,
 	}
 }

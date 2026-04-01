@@ -6,10 +6,12 @@ import (
 
 	"os"
 
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/http"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/services"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -24,30 +26,19 @@ func main() {
 		log.Println("Aviso: Arquivo .env não encontrado. Dependendo apenas de variáveis injetadas pelo sistema.")
 	}
 
-	config.InitKeycloak(
+	keycloakAuth := config.InitKeycloak(
 		os.Getenv("KEYCLOAK_URL"),
 		os.Getenv("KEYCLOAK_CLIENT_ID"),
 		os.Getenv("KEYCLOAK_CLIENT_SECRET"),
 		os.Getenv("KEYCLOAK_REALM"),
 	)
 
-	// ips := []string{
-	// 	os.Getenv("CASSANDRA_IP_LOCAL"),
-	// 	os.Getenv("CASSANDRA_IP_MASTER"),
-	// }
-	// localDC := os.Getenv("CASSANDRA_LOCAL_DC")
-	// clinicaKeyspace := os.Getenv("CASSANDRA_CLINICA_KEYSPACE")
+	cassandraDB := config.CassandraConnect()
+	defer cassandraDB.Close()
 
-	// if localDC == "" || clinicaKeyspace == "" {
-	// 	log.Fatal("❌ Erro crítico: Configure as variáveis CASSANDRA_LOCAL_DC e CASSANDRA_CLINICA_KEYSPACE no .env desta Clínica.")
-	// }
-
-	// db := config.CassandraConnect(ips, localDC, clinicaKeyspace)
-	// defer db.Close()
-
-	// if db.Core == nil || db.Clinica == nil {
-    //     log.Fatal("❌ Erro crítico: Não foi possível estabelecer as sessões mínimas do Cassandra.")
-    // }
+	if cassandraDB.Core == nil {
+		log.Fatal("❌ Erro crítico: Não foi possível estabelecer as sessões mínimas do Cassandra.")
+	}
 
 	mariaDB := config.MariaDBConnect()
 	if mariaDB == nil {
@@ -58,6 +49,9 @@ func main() {
 		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
 
+	signupService := services.NewSignupService(mariaDB, cassandraDB, keycloakAuth)
+	userHandler := userHttp.NewUserHandler(signupService)
+
 	router := gin.Default()
 
 	router.GET("/health", func(c *gin.Context) {
@@ -65,6 +59,8 @@ func main() {
 			"Message": "OK",
 		})
 	})
+
+	router.POST("/signup", userHandler.Signup)
 
 	if err := router.Run(":8000"); err != nil {
 		log.Fatal("Error starting server: ", err)
