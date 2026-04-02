@@ -5,24 +5,35 @@ import (
 	"fmt"
 
 	"github.com/Nerzal/gocloak/v13"
-	"github.com/gocql/gocql"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/usecase"
 	sharedConfig "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
+	"github.com/gocql/gocql"
 	"gorm.io/gorm"
 )
 
 type SignupService struct {
-	DB        *gorm.DB
-	Cassandra *sharedConfig.DbClient
-	Keycloak  *sharedConfig.KeycloakAuth
+	DB           *gorm.DB
+	Cassandra    *sharedConfig.DbClient
+	Keycloak     *sharedConfig.KeycloakAuth
+	ValidationUC *usecase.ValidateSignupUseCase
 }
 
 func NewSignupService(db *gorm.DB, cassandra *sharedConfig.DbClient, kc *sharedConfig.KeycloakAuth) *SignupService {
-	return &SignupService{DB: db, Cassandra: cassandra, Keycloak: kc}
+	return &SignupService{
+		DB:           db,
+		Cassandra:    cassandra,
+		Keycloak:     kc,
+		ValidationUC: usecase.NewValidateSignupUseCase(db, kc),
+	}
 }
 
 func (s *SignupService) Signup(req models.SignupRequest) error {
 	ctx := context.Background()
+
+	if err := s.ValidationUC.Execute(ctx, req); err != nil {
+		return err
+	}
 
 	token, err := s.Keycloak.Client.LoginClient(ctx, s.Keycloak.ClientID, s.Keycloak.ClientSecret, s.Keycloak.Realm)
 	if err != nil {

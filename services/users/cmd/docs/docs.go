@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/signup": {
+        "/api/signup": {
             "post": {
                 "description": "Cadastra um paciente integrando Keycloak, MariaDB e Cassandra",
                 "consumes": [

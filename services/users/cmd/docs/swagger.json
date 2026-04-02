@@ -9,7 +9,7 @@
     "host": "localhost:8000",
     "basePath": "/",
     "paths": {
-        "/signup": {
+        "/api/signup": {
             "post": {
                 "description": "Cadastra um paciente integrando Keycloak, MariaDB e Cassandra",
                 "consumes": [

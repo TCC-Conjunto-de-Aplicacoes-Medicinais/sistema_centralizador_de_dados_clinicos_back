@@ -25,7 +25,7 @@ func NewUserHandler(signupService *services.SignupService) *UserHandler {
 // @Success      201  {object} map[string]string
 // @Failure      400  {object} map[string]string
 // @Failure      500  {object} map[string]string
-// @Router       /signup [post]
+// @Router       /api/signup [post]
 func (h *UserHandler) Signup(c *gin.Context) {
 	var req models.SignupRequest
 

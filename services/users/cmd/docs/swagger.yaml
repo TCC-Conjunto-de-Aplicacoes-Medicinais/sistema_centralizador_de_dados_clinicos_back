@@ -38,7 +38,7 @@ info:
   title: Sistema Centralizador de Dados Clínicos API
   version: "1.0"
 paths:
-  /signup:
+  /api/signup:
     post:
       consumes:
       - application/json
