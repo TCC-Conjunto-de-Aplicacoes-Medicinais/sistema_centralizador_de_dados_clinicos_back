@@ -16,6 +16,16 @@ func NewUserHandler(signupService *services.SignupService) *UserHandler {
 	return &UserHandler{SignupService: signupService}
 }
 
+// @Summary      Cadastro de Paciente
+// @Description  Cadastra um paciente integrando Keycloak, MariaDB e Cassandra
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        request body models.SignupRequest true "Dados do paciente e dispositivo"
+// @Success      201  {object} map[string]string
+// @Failure      400  {object} map[string]string
+// @Failure      500  {object} map[string]string
+// @Router       /signup [post]
 func (h *UserHandler) Signup(c *gin.Context) {
 	var req models.SignupRequest
 

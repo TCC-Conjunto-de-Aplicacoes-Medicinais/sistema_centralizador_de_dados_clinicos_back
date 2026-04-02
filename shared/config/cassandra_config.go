@@ -20,8 +20,9 @@ func CassandraConnect() *DbClient {
 	clusterCore.IgnorePeerAddr = true
 	clusterCore.Consistency = gocql.One
 	clusterCore.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
-	clusterCore.ConnectTimeout = 60 * time.Second
-	clusterCore.Timeout = 60 * time.Second
+	clusterCore.ConnectTimeout = 10 * time.Second
+	clusterCore.Timeout = 10 * time.Second
+	clusterCore.SocketKeepalive = 30 * time.Second
 
 	sessionCore, err := clusterCore.CreateSession()
 	if err != nil {
@@ -36,6 +37,7 @@ func CassandraConnect() *DbClient {
 	clusterClinica.IgnorePeerAddr = true
 	clusterClinica.ConnectTimeout = 10 * time.Second
 	clusterClinica.Timeout = 10 * time.Second
+	clusterClinica.SocketKeepalive = 30 * time.Second
 
 	sessionClinica, err := clusterClinica.CreateSession()
 	if err != nil {

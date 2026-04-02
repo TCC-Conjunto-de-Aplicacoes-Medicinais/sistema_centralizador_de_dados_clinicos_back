@@ -10,10 +10,20 @@ import (
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/services"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
+	
+	_ "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/cmd/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
+// @title           Sistema Centralizador de Dados Clínicos API
+// @version         1.0
+// @description     API para gerenciamento de pacientes e dispositivos via Keycloak e polyglot persistence.
+// @host            localhost:8000
+// @BasePath        /
 func main() {
 	envLoaded := false
 	for _, envPath := range []string{".env", "../.env", "../../.env", "../../../.env"} {
@@ -61,6 +71,8 @@ func main() {
 	})
 
 	router.POST("/signup", userHandler.Signup)
+	
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	if err := router.Run(":8000"); err != nil {
 		log.Fatal("Error starting server: ", err)

@@ -1,0 +1,77 @@
+basePath: /
+definitions:
+  models.Device:
+    properties:
+      device_name:
+        type: string
+      public_key:
+        type: string
+    required:
+    - device_name
+    - public_key
+    type: object
+  models.SignupRequest:
+    properties:
+      cpf:
+        type: string
+      device:
+        $ref: '#/definitions/models.Device'
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - cpf
+    - device
+    - email
+    - name
+    - password
+    type: object
+host: localhost:8000
+info:
+  contact: {}
+  description: API para gerenciamento de pacientes e dispositivos via Keycloak e polyglot
+    persistence.
+  title: Sistema Centralizador de Dados Clínicos API
+  version: "1.0"
+paths:
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: Cadastra um paciente integrando Keycloak, MariaDB e Cassandra
+      parameters:
+      - description: Dados do paciente e dispositivo
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.SignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cadastro de Paciente
+      tags:
+      - users
+swagger: "2.0"
