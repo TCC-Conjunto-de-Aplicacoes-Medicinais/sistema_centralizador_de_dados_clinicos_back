@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"net/http"
-
 	"os"
+	"time"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/http"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/services"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/internal/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/dpop"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 
 	_ "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/cmd/docs"
@@ -60,7 +62,16 @@ func main() {
 	}
 
 	signupService := services.NewSignupService(mariaDB, cassandraDB, keycloakAuth)
-	userHandler := userHttp.NewUserHandler(signupService)
+
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8000"
+	}
+	replayStore := dpop.NewReplayStore(2 * time.Minute)
+	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
+	loginService := services.NewLoginService(keycloakAuth, dpopUseCase)
+
+	userHandler := userHttp.NewUserHandler(signupService, loginService)
 
 	router := gin.Default()
 
@@ -71,6 +82,7 @@ func main() {
 	})
 
 	router.POST("/api/signup", userHandler.Signup)
+	router.POST("/api/login", userHandler.Login)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
