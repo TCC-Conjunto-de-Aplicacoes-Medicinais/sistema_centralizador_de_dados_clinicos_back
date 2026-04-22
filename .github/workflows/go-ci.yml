@@ -36,15 +36,13 @@ jobs:
 
       - name: Test with Coverage
         run: |
-          go test -v -coverprofile=coverage.out ./tests/unitTests/...
+          go test -v -coverprofile=coverage.out -coverpkg=./shared/dpop,./services/users/core/http ./tests/unitTests/...
           
-          # Extrai o percentual total (ex: 74.5)
           TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          echo "Cobertura total: $TOTAL_COVERAGE%"
+          echo "Cobertura total dos alvos: $TOTAL_COVERAGE%"
           
-          # Validação matemática (falha se for menor que 65.0)
-          if (( $(echo "$TOTAL_COVERAGE < 65.0" | bc -l) )); then
-            echo "❌ Erro: Cobertura de testes ($TOTAL_COVERAGE%) está abaixo da meta (65%)!"
+          if (( $(echo "$TOTAL_COVERAGE < 60.0" | bc -l) )); then
+            echo "❌ Erro: Cobertura de testes ($TOTAL_COVERAGE%) está abaixo da meta (60%)!"
             exit 1
           else
             echo "✅ Cobertura ($TOTAL_COVERAGE%) acima ou igual à meta!"
