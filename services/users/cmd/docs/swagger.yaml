@@ -10,6 +10,28 @@ definitions:
     - device_name
     - public_key
     type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
   models.SignupRequest:
     properties:
       cpf:
@@ -38,6 +60,52 @@ info:
   title: Sistema Centralizador de Dados Clínicos API
   version: "1.0"
 paths:
+  /api/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica um paciente via Keycloak exigindo DPoP proof (RFC 9449)
+        no header
+      parameters:
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Credenciais do paciente
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login de Paciente com DPoP
+      tags:
+      - users
   /api/signup:
     post:
       consumes:
