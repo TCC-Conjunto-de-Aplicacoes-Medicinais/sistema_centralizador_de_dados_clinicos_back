@@ -22,6 +22,7 @@ func setupUnitRouter() *gin.Engine {
 
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
+	router.POST("/api/refresh", userHandler.Refresh)
 	
 	return router
 }
@@ -51,6 +52,20 @@ func TestLoginHandler_BindJSON_Error(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/login", bytes.NewBuffer(payloadInvalido))
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestRefreshHandler_BindJSON_Error(t *testing.T) {
+	router := setupUnitRouter()
+
+	payloadInvalido := []byte(`{}`)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/refresh", bytes.NewBuffer(payloadInvalido))
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(w, req)

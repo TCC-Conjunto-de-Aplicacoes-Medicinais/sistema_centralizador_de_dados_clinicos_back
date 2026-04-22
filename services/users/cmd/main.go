@@ -83,6 +83,7 @@ func main() {
 
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
+	router.POST("/api/refresh", userHandler.Refresh)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

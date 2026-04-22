@@ -82,3 +82,39 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+// @Summary      Atualização de Access Token
+// @Description  Emite um novo token usando um RefreshToken via Keycloak exigindo DPoP proof no header
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        DPoP    header   string             true  "DPoP Proof JWT (RFC 9449)"
+// @Param        request body     models.RefreshRequest true  "Token de refresh"
+// @Success      200     {object} models.RefreshResponse
+// @Failure      400     {object} map[string]string
+// @Failure      401     {object} map[string]string
+// @Failure      500     {object} map[string]string
+// @Router       /api/refresh [post]
+func (h *UserHandler) Refresh(c *gin.Context) {
+	proofJWT := c.GetHeader("DPoP")
+
+	var req models.RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	resp, err := h.LoginService.Refresh(proofJWT, req)
+	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "dpop") || strings.Contains(msg, "DPoP") ||
+			strings.Contains(msg, "inválidas") || strings.Contains(msg, "header DPoP") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}

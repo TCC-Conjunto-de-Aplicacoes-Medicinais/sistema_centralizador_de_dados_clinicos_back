@@ -83,6 +83,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/refresh": {
+            "post": {
+                "description": "Emite um novo token usando um RefreshToken via Keycloak exigindo DPoP proof no header",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Atualização de Access Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "DPoP Proof JWT (RFC 9449)",
+                        "name": "DPoP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Token de refresh",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.RefreshRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.RefreshResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/signup": {
             "post": {
                 "description": "Cadastra um paciente integrando Keycloak, MariaDB e Cassandra",
@@ -172,6 +240,34 @@ const docTemplate = `{
             }
         },
         "models.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RefreshRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.RefreshResponse": {
             "type": "object",
             "properties": {
                 "access_token": {

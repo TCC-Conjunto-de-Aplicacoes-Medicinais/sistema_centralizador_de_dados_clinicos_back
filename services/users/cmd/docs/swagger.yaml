@@ -32,6 +32,24 @@ definitions:
       token_type:
         type: string
     type: object
+  models.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  models.RefreshResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+    type: object
   models.SignupRequest:
     properties:
       cpf:
@@ -104,6 +122,52 @@ paths:
               type: string
             type: object
       summary: Login de Paciente com DPoP
+      tags:
+      - users
+  /api/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Emite um novo token usando um RefreshToken via Keycloak exigindo
+        DPoP proof no header
+      parameters:
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Token de refresh
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RefreshResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Atualização de Access Token
       tags:
       - users
   /api/signup:
