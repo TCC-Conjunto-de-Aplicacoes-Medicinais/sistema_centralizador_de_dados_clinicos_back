@@ -3,10 +3,12 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Nerzal/gocloak/v13"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	sharedConfig "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 	"github.com/gocql/gocql"
 	"gorm.io/gorm"
@@ -42,10 +44,12 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 
 	enabled := true
 	keycloakUser := gocloak.User{
-		Username:  gocloak.StringP(req.Email),
-		Email:     gocloak.StringP(req.Email),
-		FirstName: gocloak.StringP(req.Name),
-		Enabled:   &enabled,
+		Username:      gocloak.StringP(req.Email),
+		Email:         gocloak.StringP(req.Email),
+		FirstName:     gocloak.StringP(req.Name),
+		LastName:      gocloak.StringP("-"),
+		EmailVerified: gocloak.BoolP(true),
+		Enabled:       &enabled,
 	}
 
 	keycloakID, err := s.Keycloak.Client.CreateUser(ctx, token.AccessToken, s.Keycloak.Realm, keycloakUser)
@@ -58,7 +62,13 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 		return fmt.Errorf("erro ao definir senha no keycloak: %w", err)
 	}
 
-	patient := models.Patients{
+	uuid, err := gocql.ParseUUID(keycloakID)
+	if err != nil {
+		return fmt.Errorf("erro ao converter id do keycloak para uuid: %w", err)
+	}
+
+	patient := database.Patients{
+		Id:         uuid.String(),
 		Name:       req.Name,
 		Email:      req.Email,
 		CPF:        req.CPF,
@@ -69,13 +79,8 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 		return fmt.Errorf("erro ao salvar paciente no banco relacional: %w", result.Error)
 	}
 
-	uuid, err := gocql.ParseUUID(keycloakID)
-	if err != nil {
-		return fmt.Errorf("erro ao converter id do keycloak para uuid: %w", err)
-	}
-
-	query := `INSERT INTO user_devices (user_id, device_name, public_key) VALUES (?, ?, ?)`
-	if err := s.Cassandra.Core.Query(query, uuid, req.Device.DeviceName, req.Device.PublicKey).Exec(); err != nil {
+	query := `INSERT INTO user_devices (user_id, created_at, device_name, public_key) VALUES (?, ?, ?, ?)`
+	if err := s.Cassandra.Core.Query(query, uuid, time.Now().Unix(), req.Device.DeviceName, req.Device.PublicKey).Exec(); err != nil {
 		return fmt.Errorf("erro ao salvar dispositivo no cassandra: %w", err)
 	}
 
