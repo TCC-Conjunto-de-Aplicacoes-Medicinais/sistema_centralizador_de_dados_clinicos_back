@@ -36,7 +36,7 @@ func CassandraConnect() *DbClient {
 		cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy(localDC)
 	}
 
-	cluster.Consistency = gocql.LocalQuorum
+	cluster.Consistency = gocql.LocalOne
 
 	cluster.ConnectTimeout = 10 * time.Second
 	cluster.Timeout = 10 * time.Second
