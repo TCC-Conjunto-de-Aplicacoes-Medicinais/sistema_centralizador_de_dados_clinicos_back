@@ -1,4 +1,4 @@
-package models
+package database
 
 import (
 	"log"
@@ -6,13 +6,11 @@ import (
 	"gorm.io/gorm"
 )
 
-// RunMigrations executa o AutoMigrate (criação/atualização das tabelas) para todas as structs GORM cadastradas.
 func RunMigrations(db *gorm.DB) error {
 	log.Println("⚙️ Iniciando sincronização e estruturação do banco de dados (MariaDB)...")
 
-	// Ponto central de registro: sempre que você criar uma model nova (User, Appointments, etc), adicione ela na lista abaixo!
 	err := db.AutoMigrate(
-		&Patients{}, 
+		&Patients{},
 		// &Doctors{},
 		// &Appointments{},
 		// etc...
