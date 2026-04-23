@@ -3,58 +3,63 @@ package config
 import (
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
 )
 
 type DbClient struct {
-	Core    *gocql.Session
-	Clinica *gocql.Session
+	Core *gocql.Session
 }
 
 func CassandraConnect() *DbClient {
-	clusterCore := gocql.NewCluster(os.Getenv("CASSANDRA_IP_MASTER"))
-	clusterCore.ProtoVersion = 4
-	clusterCore.DisableInitialHostLookup = true
-	clusterCore.IgnorePeerAddr = true
-	clusterCore.Consistency = gocql.One
-	clusterCore.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
-	clusterCore.ConnectTimeout = 10 * time.Second
-	clusterCore.Timeout = 10 * time.Second
-	clusterCore.SocketKeepalive = 30 * time.Second
-
-	sessionCore, err := clusterCore.CreateSession()
-	if err != nil {
-		log.Fatalf("❌ Erro na Matriz (AWS): %v", err)
+	var nodes []string
+	if ipLocal := os.Getenv("CASSANDRA_IP_LOCAL"); ipLocal != "" {
+		nodes = append(nodes, ipLocal)
+	}
+	if ipMaster := os.Getenv("CASSANDRA_IP_MASTER"); ipMaster != "" {
+		nodes = append(nodes, ipMaster)
 	}
 
-	clusterClinica := gocql.NewCluster(os.Getenv("CASSANDRA_IP_LOCAL"))
-	clusterClinica.Keyspace = os.Getenv("CASSANDRA_CLINICA_KEYSPACE")
-	clusterClinica.Consistency = gocql.One
-	clusterClinica.ProtoVersion = 4
-	clusterClinica.DisableInitialHostLookup = true
-	clusterClinica.IgnorePeerAddr = true
-	clusterClinica.ConnectTimeout = 10 * time.Second
-	clusterClinica.Timeout = 10 * time.Second
-	clusterClinica.SocketKeepalive = 30 * time.Second
+	if len(nodes) == 0 {
+		log.Println("⚠️ Nenhum nó do Cassandra fornecido nas variáveis de ambiente.")
+	}
 
-	sessionClinica, err := clusterClinica.CreateSession()
+	cluster := gocql.NewCluster(nodes...)
+	cluster.ProtoVersion = 4
+
+	cluster.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
+
+	localDC := strings.TrimSpace(os.Getenv("CASSANDRA_LOCAL_DC"))
+	if localDC != "" {
+		cluster.PoolConfig.HostSelectionPolicy = gocql.DCAwareRoundRobinPolicy(localDC)
+	}
+
+	cluster.Consistency = gocql.LocalQuorum
+
+	cluster.ConnectTimeout = 10 * time.Second
+	cluster.Timeout = 10 * time.Second
+	cluster.SocketKeepalive = 30 * time.Second
+
+	session, err := cluster.CreateSession()
 	if err != nil {
-		log.Printf("⚠️ Clínica Local offline: %v", err)
+		log.Fatalf("❌ Erro fatal ao ingressar no Cluster do Cassandra: %v", err)
+	}
+
+	if localDC != "" {
+		log.Printf("✅ Cassandra aderido! Datacenter ativo: [%s] | IPs detectados: %v", localDC, nodes)
+	} else {
+		log.Printf("✅ Cassandra aderido na Matriz Core (Balanceamento global) | IPs detectados: %v", nodes)
 	}
 
 	return &DbClient{
-		Core:    sessionCore,
-		Clinica: sessionClinica,
+		Core: session,
 	}
 }
 
 func (db *DbClient) Close() {
 	if db.Core != nil {
 		db.Core.Close()
-	}
-	if db.Clinica != nil {
-		db.Clinica.Close()
 	}
 }
