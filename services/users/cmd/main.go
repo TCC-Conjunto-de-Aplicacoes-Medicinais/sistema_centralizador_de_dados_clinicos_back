@@ -10,8 +10,8 @@ import (
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/services"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/dpop"
-	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 
 	_ "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/cmd/docs"
 	swaggerFiles "github.com/swaggo/files"
@@ -57,7 +57,7 @@ func main() {
 		log.Fatal("❌ Erro crítico: Falha ao iniciar sessão no MariaDB.")
 	}
 
-	if err := models.RunMigrations(mariaDB); err != nil {
+	if err := database.RunMigrations(mariaDB); err != nil {
 		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
 
