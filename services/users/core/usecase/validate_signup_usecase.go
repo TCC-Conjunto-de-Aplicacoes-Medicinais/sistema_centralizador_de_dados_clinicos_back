@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	sharedConfig "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 
 	"github.com/Nerzal/gocloak/v13"
@@ -23,14 +24,14 @@ func NewValidateSignupUseCase(db *gorm.DB, kc *sharedConfig.KeycloakAuth) *Valid
 func (uc *ValidateSignupUseCase) Execute(ctx context.Context, req models.SignupRequest) error {
 	var count int64
 
-	if err := uc.DB.Model(&models.Patients{}).Where("cpf = ?", req.CPF).Count(&count).Error; err != nil {
+	if err := uc.DB.Model(&database.Patients{}).Where("cpf = ?", req.CPF).Count(&count).Error; err != nil {
 		return errors.New("erro ao verificar integridade do CPF no banco de dados")
 	}
 	if count > 0 {
 		return errors.New("validação falhou: o CPF informado já está em uso")
 	}
 
-	if err := uc.DB.Model(&models.Patients{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
+	if err := uc.DB.Model(&database.Patients{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
 		return errors.New("erro ao verificar integridade do E-mail no banco de dados")
 	}
 	if count > 0 {
