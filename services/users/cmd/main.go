@@ -14,6 +14,7 @@ import (
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/dpop"
 
 	_ "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/cmd/docs"
+	"github.com/gin-contrib/cors"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -74,6 +75,14 @@ func main() {
 	userHandler := userHttp.NewUserHandler(signupService, loginService)
 
 	router := gin.Default()
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "DPoP"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: false,
+	}))
 
 	router.GET("/api/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
