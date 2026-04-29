@@ -16,9 +16,9 @@ func setupUnitRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
-	// Injetamos nil nos serviços já que o objetivo aqui é testar
-	// estritamente o comportamento do Handlers HTTP (ex: Bindings de JSON).
-	userHandler := userHttp.NewUserHandler(nil, nil)
+	// Injetamos nil nos serviços e no logger pois o objetivo é testar
+	// estritamente o comportamento HTTP (bindings de JSON).
+	userHandler := userHttp.NewUserHandler(nil, nil, nil)
 
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)

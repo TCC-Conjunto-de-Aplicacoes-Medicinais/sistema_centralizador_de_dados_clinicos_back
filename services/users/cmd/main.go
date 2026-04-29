@@ -12,6 +12,7 @@ import (
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/dpop"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 
 	_ "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/cmd/docs"
 	"github.com/gin-contrib/cors"
@@ -72,7 +73,8 @@ func main() {
 	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
 	loginService := services.NewLoginService(keycloakAuth, dpopUseCase)
 
-	userHandler := userHttp.NewUserHandler(signupService, loginService)
+	appLogger := logger.NewLogger(cassandraDB.Core)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, appLogger)
 
 	router := gin.Default()
 
