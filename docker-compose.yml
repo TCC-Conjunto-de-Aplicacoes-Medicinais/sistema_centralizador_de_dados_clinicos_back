@@ -15,6 +15,10 @@ services:
       - ./scripts/init-mariadb.sh:/docker-entrypoint-initdb.d/init-mariadb.sh:ro
     ports:
       - "3306:3306"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   keycloak:
     image: quay.io/keycloak/keycloak:latest
@@ -35,6 +39,10 @@ services:
       - "8080:8080"
     depends_on:
       - mariadb
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   cassandra:
     image: cassandra:latest
@@ -48,8 +56,14 @@ services:
       - CASSANDRA_DC=${CASSANDRA_LOCAL_DC:-DC_MASTER}
       - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
       - CASSANDRA_SEEDS=${CASSANDRA_SEEDS:-cassandra_server}
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
     volumes:
       - cassandra_data:/var/lib/cassandra
+    deploy:
+      resources:
+        limits:
+          memory: 1G
 
   users-service:
     image: ${DOCKERHUB_USERNAME}/users-service:latest
@@ -75,6 +89,10 @@ services:
       - mariadb
       - keycloak
       - cassandra
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
 volumes:
   mariadb_data:
