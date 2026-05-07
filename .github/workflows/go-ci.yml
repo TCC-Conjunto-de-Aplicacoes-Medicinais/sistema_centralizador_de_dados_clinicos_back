@@ -47,3 +47,80 @@ jobs:
           else
             echo "✅ Cobertura ($TOTAL_COVERAGE%) acima ou igual à meta!"
           fi
+
+  build-and-push:
+    name: Build and Push Docker Image
+    needs: build-and-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Users Service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./services/users/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/users-service:latest
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            mkdir -p ~/deploy && cd ~/deploy
+
+            # Gera o .env com todos os secrets necessários
+            cat > .env <<EOF
+            MARIADB_USER=${{ secrets.MARIADB_USER }}
+            MARIADB_PASSWORD=${{ secrets.MARIADB_PASSWORD }}
+            MARIADB_DB=${{ secrets.MARIADB_DB }}
+            # KEYCLOAK_HOSTNAME=${{ secrets.KEYCLOAK_HOSTNAME }}
+            # KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
+            # KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+            # KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
+            CASSANDRA_CLUSTER_NAME=${{ secrets.CASSANDRA_CLUSTER_NAME }}
+            CASSANDRA_LOCAL_DC=${{ secrets.CASSANDRA_LOCAL_DC }}
+            CASSANDRA_SEEDS=${{ secrets.CASSANDRA_SEEDS }}
+            CASSANDRA_CORE_KEYSPACE=${{ secrets.CASSANDRA_CORE_KEYSPACE }}
+            DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+            BASE_URL=${{ secrets.BASE_URL }}
+            EOF
+
+            # Baixa o docker-compose.yml e scripts atualizados do repositório
+            curl -sL -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml" \
+              -o docker-compose.yml
+
+            mkdir -p scripts
+            curl -sL -H "Authorization: token ${{ secrets.GH_PAT }}" \
+              "https://raw.githubusercontent.com/${{ github.repository }}/main/scripts/init-mariadb.sh" \
+              -o scripts/init-mariadb.sh
+            chmod +x scripts/init-mariadb.sh
+
+            # Puxa a imagem mais recente do microserviço
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/users-service:latest
+
+            # Sobe todos os containers
+            docker compose --env-file .env up -d
+
+            # Limpa imagens antigas
+            docker image prune -f
+

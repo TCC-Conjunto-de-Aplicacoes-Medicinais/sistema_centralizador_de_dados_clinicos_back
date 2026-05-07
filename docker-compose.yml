@@ -2,30 +2,79 @@ version: '3.8'
 
 services:
   mariadb:
-    image: mariadb:10.11
-    container_name: clinica_mariadb
-    restart: unless-stopped
+    image: mariadb:11
+    container_name: mariadb_server_master
+    restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MARIADB_PASSWORD}
-      MYSQL_DATABASE: ${MARIADB_DB}
-    ports:
-      - "${MARIADB_PORT:-3306}:3306"
+      MARIADB_ROOT_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DB}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./scripts/init-mariadb.sh:/docker-entrypoint-initdb.d/init-mariadb.sh:ro
+    ports:
+      - "3306:3306"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak_server_master
+    restart: always
+    command: start
+    environment:
+      KC_DB: mariadb
+      KC_DB_URL: jdbc:mariadb://mariadb_server_master:3306/keycloak_db
+      KC_DB_USERNAME: ${MARIADB_USER}
+      KC_DB_PASSWORD: ${MARIADB_PASSWORD}
+      KEYCLOAK_ADMIN: ${MARIADB_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${MARIADB_PASSWORD}
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mariadb
 
   cassandra:
-    image: cassandra:4.1
-    container_name: clinica_cassandra
+    image: cassandra:latest
+    container_name: cassandra_server
     restart: unless-stopped
-    environment:
-      CASSANDRA_CLUSTER_NAME: ${CASSANDRA_CLUSTER_NAME}
-      CASSANDRA_DC: ${CASSANDRA_LOCAL_DC}
-      CASSANDRA_RACK: ${CASSANDRA_RACK}
-      CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
     ports:
       - "9042:9042"
+      - "7000:7000"
+    environment:
+      - CASSANDRA_CLUSTER_NAME=${CASSANDRA_CLUSTER_NAME:-OpenHealth}
+      - CASSANDRA_DC=${CASSANDRA_LOCAL_DC:-DC_MASTER}
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - CASSANDRA_SEEDS=${CASSANDRA_SEEDS:-cassandra_server}
     volumes:
       - cassandra_data:/var/lib/cassandra
+
+  users-service:
+    image: ${DOCKERHUB_USERNAME}/users-service:latest
+    container_name: users_service_master
+    restart: always
+    environment:
+      CASSANDRA_IP_MASTER: cassandra_server
+      CASSANDRA_CORE_KEYSPACE: ${CASSANDRA_CORE_KEYSPACE:-sistema_core}
+      CASSANDRA_LOCAL_DC: ${CASSANDRA_LOCAL_DC:-datacenter1}
+      KEYCLOAK_URL: http://keycloak_server_master:8080
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM}
+      MARIADB_HOST: mariadb_server_master
+      MARIADB_PORT: "3306"
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DB: ${MARIADB_DB}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mariadb
+      - keycloak
+      - cassandra
 
 volumes:
   mariadb_data:
