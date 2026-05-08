@@ -40,7 +40,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${MARIADB_PASSWORD}
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-localhost}
+      KC_HOSTNAME_STRICT: "false"
+      # KC_HOSTNAME: ${KEYCLOAK_HOSTNAME} # Descomente e defina quando tiver um domínio real
     ports:
       - "8080:8080"
     depends_on:
