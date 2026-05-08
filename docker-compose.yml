@@ -16,7 +16,7 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      test: [ "CMD", "healthcheck.sh", "--connect", "--innodb_initialized" ]
       start_period: 15s
       interval: 10s
       timeout: 5s
@@ -30,7 +30,7 @@ services:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak_server_master
     restart: always
-    command: start
+    command: start-dev
     environment:
       KC_DB: mariadb
       KC_DB_URL: jdbc:mariadb://mariadb_server_master:3306/keycloak_db
