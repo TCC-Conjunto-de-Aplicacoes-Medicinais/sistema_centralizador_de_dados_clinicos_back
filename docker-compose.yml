@@ -16,10 +16,11 @@ services:
     ports:
       - "3306:3306"
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MARIADB_USER}", "--password=${MARIADB_PASSWORD}" ]
-      interval: 5s
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 15s
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
     deploy:
       resources:
         limits:
