@@ -40,7 +40,8 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${MARIADB_PASSWORD}
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT: "false" # REMOVA quando tiver domínio HTTPS
+      KC_HOSTNAME_STRICT_HTTPS: "false" # REMOVA quando tiver domínio HTTPS
       # KC_HOSTNAME: ${KEYCLOAK_HOSTNAME} # Descomente e defina quando tiver um domínio real
     ports:
       - "8080:8080"
@@ -111,7 +112,7 @@ services:
     environment:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
-      - N8N_SECURE_COOKIE=false
+      - N8N_SECURE_COOKIE=false # REMOVA quando tiver domínio HTTPS
       # - WEBHOOK_URL=https://n8n.seudominio.com.br/ # Descomente e preencha quando tiver o domínio configurado
     volumes:
       - n8n_data:/home/node/.n8n
