@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -29,7 +30,6 @@ func CassandraConnect() *DbClient {
 	cluster := gocql.NewCluster(nodes...)
 	cluster.ProtoVersion = 4
 
-	cluster.Keyspace = os.Getenv("CASSANDRA_CORE_KEYSPACE")
 
 	localDC := strings.TrimSpace(os.Getenv("CASSANDRA_LOCAL_DC"))
 	if localDC != "" {
@@ -42,6 +42,27 @@ func CassandraConnect() *DbClient {
 	cluster.Timeout = 10 * time.Second
 	cluster.SocketKeepalive = 30 * time.Second
 
+	// 1. Criar uma sessão inicial (sem keyspace) para poder criá-lo
+	tempSession, err := cluster.CreateSession()
+	if err != nil {
+		log.Fatalf("❌ Erro fatal ao conectar no Cassandra para setup: %v", err)
+	}
+
+	keyspace := os.Getenv("CASSANDRA_CORE_KEYSPACE")
+	if keyspace == "" {
+		keyspace = "sistema_core"
+	}
+
+	// 2. Criar o keyspace se não existir
+	createKsQuery := fmt.Sprintf(`CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};`, keyspace)
+	if err := tempSession.Query(createKsQuery).Exec(); err != nil {
+		log.Fatalf("❌ Erro ao criar Keyspace '%s': %v", keyspace, err)
+	}
+
+	tempSession.Close()
+
+	// 4. Agora sim, conectar especificando o Keyspace
+	cluster.Keyspace = keyspace
 	session, err := cluster.CreateSession()
 	if err != nil {
 		log.Fatalf("❌ Erro fatal ao ingressar no Cluster do Cassandra: %v", err)

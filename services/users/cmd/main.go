@@ -63,6 +63,10 @@ func main() {
 		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
 
+	if err := database.RunCassandraMigrations(cassandraDB.Core); err != nil {
+		log.Fatalf("Erro ao criar tabelas do Cassandra: %v", err)
+	}
+
 	signupService := services.NewSignupService(mariaDB, cassandraDB, keycloakAuth)
 
 	baseURL := os.Getenv("BASE_URL")
