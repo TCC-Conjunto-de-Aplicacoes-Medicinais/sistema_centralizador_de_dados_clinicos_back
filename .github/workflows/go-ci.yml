@@ -93,10 +93,10 @@ jobs:
             MARIADB_USER=${{ secrets.MARIADB_USER }}
             MARIADB_PASSWORD=${{ secrets.MARIADB_PASSWORD }}
             MARIADB_DB=${{ secrets.MARIADB_DB }}
-            # KEYCLOAK_HOSTNAME=${{ secrets.KEYCLOAK_HOSTNAME }}
-            # KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
-            # KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
-            # KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
+            KEYCLOAK_HOSTNAME=${{ secrets.KEYCLOAK_HOSTNAME }}
+            KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
+            KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
+            KEYCLOAK_REALM=${{ secrets.KEYCLOAK_REALM }}
             CASSANDRA_CLUSTER_NAME=${{ secrets.CASSANDRA_CLUSTER_NAME }}
             CASSANDRA_LOCAL_DC=${{ secrets.CASSANDRA_LOCAL_DC }}
             CASSANDRA_SEEDS=${{ secrets.CASSANDRA_SEEDS }}
