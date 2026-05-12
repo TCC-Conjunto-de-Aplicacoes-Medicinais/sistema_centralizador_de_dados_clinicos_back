@@ -45,6 +45,10 @@ func NewUserHandler(
 // @Failure      500  {object} map[string]string
 // @Router       /api/signup [post]
 func (h *UserHandler) Signup(c *gin.Context) {
+	if h.SignupService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
 	var req models.SignupRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -94,6 +98,10 @@ func (h *UserHandler) Signup(c *gin.Context) {
 // @Failure      500     {object} map[string]string
 // @Router       /api/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
+	if h.LoginService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
 	proofJWT := c.GetHeader("DPoP")
 
 	var req models.LoginRequest
@@ -151,6 +159,10 @@ func (h *UserHandler) Login(c *gin.Context) {
 // @Failure      500     {object} map[string]string
 // @Router       /api/refresh [post]
 func (h *UserHandler) Refresh(c *gin.Context) {
+	if h.LoginService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
 	proofJWT := c.GetHeader("DPoP")
 
 	var req models.RefreshRequest
@@ -207,6 +219,10 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 // @Failure      500     {object} map[string]string
 // @Router       /api/users/{id} [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
+	if h.UpdateUserService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
 	id := c.Param("id")
 
 	var req models.UpdateUserRequest
@@ -254,6 +270,10 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Failure      500     {object} map[string]string
 // @Router       /api/users/{id}/send-verify-email [post]
 func (h *UserHandler) SendVerifyEmail(c *gin.Context) {
+	if h.VerifyEmailService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
 	id := c.Param("id")
 
 	if err := h.VerifyEmailService.SendVerificationEmail(id); err != nil {

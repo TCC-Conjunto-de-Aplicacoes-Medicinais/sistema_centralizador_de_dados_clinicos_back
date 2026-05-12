@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/http"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/services"
 	
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -16,13 +17,19 @@ func setupUnitRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
-	// Injetamos nil nos serviços e no logger pois o objetivo é testar
-	// estritamente o comportamento HTTP (bindings de JSON).
-	userHandler := userHttp.NewUserHandler(nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(
+		&services.SignupService{},
+		&services.LoginService{},
+		&services.UpdateUserService{},
+		&services.VerifyEmailService{},
+		nil,
+	)
 
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
 	router.POST("/api/refresh", userHandler.Refresh)
+	router.PUT("/api/users/:id", userHandler.UpdateUser)
+	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
 	
 	return router
 }
@@ -71,4 +78,49 @@ func TestRefreshHandler_BindJSON_Error(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestUpdateUserHandler_BindJSON_Error(t *testing.T) {
+	router := setupUnitRouter()
+
+	// "name" was expecting a string, not an integer
+	payloadInvalido := []byte(`{"name": 123}`)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("PUT", "/api/users/1", bytes.NewBuffer(payloadInvalido))
+	req.Header.Set("Content-Type", "application/json")
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestServicesNil(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil)
+	
+	router.POST("/api/signup", userHandler.Signup)
+	router.POST("/api/login", userHandler.Login)
+	router.POST("/api/refresh", userHandler.Refresh)
+	router.PUT("/api/users/:id", userHandler.UpdateUser)
+	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+
+	tests := []struct {
+		Method string
+		URL    string
+	}{
+		{"POST", "/api/signup"},
+		{"POST", "/api/login"},
+		{"POST", "/api/refresh"},
+		{"PUT", "/api/users/1"},
+		{"POST", "/api/users/1/send-verify-email"},
+	}
+
+	for _, tt := range tests {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(tt.Method, tt.URL, nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+	}
 }
