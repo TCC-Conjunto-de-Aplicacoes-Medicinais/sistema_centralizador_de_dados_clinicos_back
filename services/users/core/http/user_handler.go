@@ -11,16 +11,26 @@ import (
 )
 
 type UserHandler struct {
-	SignupService *services.SignupService
-	LoginService  *services.LoginService
-	Logger        *logger.Logger
+	SignupService      *services.SignupService
+	LoginService       *services.LoginService
+	UpdateUserService  *services.UpdateUserService
+	VerifyEmailService *services.VerifyEmailService
+	Logger             *logger.Logger
 }
 
-func NewUserHandler(signupService *services.SignupService, loginService *services.LoginService, l *logger.Logger) *UserHandler {
+func NewUserHandler(
+	signupService *services.SignupService,
+	loginService *services.LoginService,
+	updateUserService *services.UpdateUserService,
+	verifyEmailService *services.VerifyEmailService,
+	l *logger.Logger,
+) *UserHandler {
 	return &UserHandler{
-		SignupService: signupService,
-		LoginService:  loginService,
-		Logger:        l,
+		SignupService:      signupService,
+		LoginService:       loginService,
+		UpdateUserService:  updateUserService,
+		VerifyEmailService: verifyEmailService,
+		Logger:             l,
 	}
 }
 
@@ -183,4 +193,87 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 		ResultStatus:  "success",
 	})
 	c.JSON(http.StatusOK, resp)
+}
+
+// @Summary      Atualização de Usuário
+// @Description  Atualiza dados do usuário (nome, telefone, endereço) no MariaDB e Keycloak
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        id      path     string                   true  "ID do Usuário"
+// @Param        request body     models.UpdateUserRequest true  "Dados para atualização"
+// @Success      200     {object} map[string]string
+// @Failure      400     {object} map[string]string
+// @Failure      500     {object} map[string]string
+// @Router       /api/users/{id} [put]
+func (h *UserHandler) UpdateUser(c *gin.Context) {
+	id := c.Param("id")
+
+	var req models.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "update_user",
+			Description:   "payload inválido para usuário " + id + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.UpdateUserService.UpdateUser(id, req); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "update_user",
+			Description:   "erro ao atualizar usuário " + id + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "update_user",
+		Description:   "usuário " + id + " atualizado com sucesso",
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+	})
+	c.JSON(http.StatusOK, gin.H{"message": "Dados atualizados com sucesso"})
+}
+
+// @Summary      Enviar E-mail de Verificação
+// @Description  Solicita ao Keycloak o envio de um e-mail de verificação para o usuário
+// @Tags         users
+// @Produce      json
+// @Param        id      path     string  true  "ID do Usuário"
+// @Success      202     {object} map[string]string
+// @Failure      400     {object} map[string]string
+// @Failure      500     {object} map[string]string
+// @Router       /api/users/{id}/send-verify-email [post]
+func (h *UserHandler) SendVerifyEmail(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.VerifyEmailService.SendVerificationEmail(id); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "send_verify_email",
+			Description:   "erro ao disparar e-mail para usuário " + id + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "send_verify_email",
+		Description:   "e-mail de verificação disparado para usuário " + id,
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+	})
+	c.JSON(http.StatusAccepted, gin.H{"message": "E-mail de verificação enviado com sucesso"})
 }

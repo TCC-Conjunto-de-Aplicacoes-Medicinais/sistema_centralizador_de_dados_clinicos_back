@@ -76,9 +76,11 @@ func main() {
 	replayStore := dpop.NewReplayStore(2 * time.Minute)
 	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
 	loginService := services.NewLoginService(keycloakAuth, dpopUseCase)
+	updateUserService := services.NewUpdateUserService(mariaDB, keycloakAuth)
+	verifyEmailService := services.NewVerifyEmailService(mariaDB, keycloakAuth)
 
 	appLogger := logger.NewLogger(cassandraDB.Core)
-	userHandler := userHttp.NewUserHandler(signupService, loginService, appLogger)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, appLogger)
 
 	router := gin.Default()
 
@@ -99,6 +101,8 @@ func main() {
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
 	router.POST("/api/refresh", userHandler.Refresh)
+	router.PUT("/api/users/:id", userHandler.UpdateUser)
+	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

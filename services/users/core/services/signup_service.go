@@ -48,7 +48,7 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 		Email:         gocloak.StringP(req.Email),
 		FirstName:     gocloak.StringP(req.Name),
 		LastName:      gocloak.StringP("-"),
-		EmailVerified: gocloak.BoolP(true),
+		EmailVerified: gocloak.BoolP(false),
 		Enabled:       &enabled,
 	}
 
