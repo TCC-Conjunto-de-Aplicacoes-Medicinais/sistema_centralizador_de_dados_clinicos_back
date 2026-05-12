@@ -42,7 +42,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.LoginRequest"
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest"
                         }
                     }
                 ],
@@ -50,7 +50,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.LoginResponse"
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse"
                         }
                     },
                     "400": {
@@ -110,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.RefreshRequest"
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest"
                         }
                     }
                 ],
@@ -118,7 +118,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.RefreshResponse"
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse"
                         }
                     },
                     "400": {
@@ -171,7 +171,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.SignupRequest"
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest"
                         }
                     }
                 ],
@@ -205,10 +205,122 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/users/{id}": {
+            "put": {
+                "description": "Atualiza dados do usuário (nome, telefone, endereço) no MariaDB e Keycloak",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Atualização de Usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Dados para atualização",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/send-verify-email": {
+            "post": {
+                "description": "Solicita ao Keycloak o envio de um e-mail de verificação para o usuário",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Enviar E-mail de Verificação",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID do Usuário",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "models.Device": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device": {
             "type": "object",
             "required": [
                 "device_name",
@@ -223,7 +335,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LoginRequest": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -239,7 +351,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.LoginResponse": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -256,7 +368,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RefreshRequest": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest": {
             "type": "object",
             "required": [
                 "refresh_token"
@@ -267,7 +379,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.RefreshResponse": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -284,7 +396,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.SignupRequest": {
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest": {
             "type": "object",
             "required": [
                 "cpf",
@@ -298,7 +410,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "device": {
-                    "$ref": "#/definitions/models.Device"
+                    "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device"
                 },
                 "email": {
                     "type": "string"
@@ -309,6 +421,20 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 8
+                }
+            }
+        },
+        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
                 }
             }
         }
