@@ -25,12 +25,8 @@ func NewVerifyEmailService(db *gorm.DB, kc *sharedConfig.KeycloakAuth) *VerifyEm
 
 func (s *VerifyEmailService) SendVerificationEmail(id string) error {
 	var patient database.Patient
-	if err := s.DB.Where("keycloak_id = ?", id).First(&patient).Error; err != nil {
+	if err := s.DB.Where("id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
-	}
-
-	if patient.KeycloakID == nil {
-		return errors.New("paciente não possui vínculo com o Keycloak")
 	}
 
 	ctx := context.Background()
@@ -41,7 +37,7 @@ func (s *VerifyEmailService) SendVerificationEmail(id string) error {
 
 	actions := []string{"VERIFY_EMAIL"}
 	params := gocloak.ExecuteActionsEmail{
-		UserID:   patient.KeycloakID,
+		UserID:   &patient.Id,
 		ClientID: gocloak.StringP(s.Keycloak.ClientID),
 		Actions:  &actions,
 	}
