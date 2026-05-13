@@ -12,6 +12,7 @@ type UserClaims struct {
 	PatientID     string `json:"sub"`
 	Name          string `json:"name"`
 	EmailVerified bool   `json:"email_verified"`
+	Email         string `json:"email"`
 }
 
 // ExtractUserClaims extrai claims úteis do JWT sem validar a assinatura.
@@ -52,6 +53,10 @@ func ExtractUserClaims(authHeader string) (*UserClaims, error) {
 
 	if verified, ok := claims["email_verified"].(bool); ok {
 		userClaims.EmailVerified = verified
+	}
+
+	if email, ok := claims["email"].(string); ok {
+		userClaims.Email = email
 	}
 
 	return userClaims, nil

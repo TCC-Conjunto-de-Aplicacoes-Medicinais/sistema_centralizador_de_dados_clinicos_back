@@ -25,7 +25,7 @@ func TestAuthMiddleware_Success(t *testing.T) {
 	router := gin.New()
 
 	// Mock Logger (nulo para teste)
-	router.Use(userHttp.AuthMiddleware(nil))
+	router.Use(userHttp.AuthMiddleware(nil, nil))
 	router.GET("/test", func(c *gin.Context) {
 		userID := c.GetString("userID")
 		userName := c.GetString("userName")
@@ -59,7 +59,7 @@ func TestAuthMiddleware_Success(t *testing.T) {
 func TestAuthMiddleware_Failure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(userHttp.AuthMiddleware(nil))
+	router.Use(userHttp.AuthMiddleware(nil, nil))
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)

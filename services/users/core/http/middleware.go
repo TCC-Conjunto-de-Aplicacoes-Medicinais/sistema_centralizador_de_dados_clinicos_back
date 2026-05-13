@@ -5,8 +5,10 @@ import (
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // DPoPMiddleware valida o proof DPoP para qualquer rota.
@@ -51,7 +53,8 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase, l *logger.Logger) gin.H
 }
 
 // AuthMiddleware extrai a identidade do usuário do JWT e injeta no contexto.
-func AuthMiddleware(l *logger.Logger) gin.HandlerFunc {
+// Também busca o nome atualizado do usuário no MariaDB.
+func AuthMiddleware(db *gorm.DB, l *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		claims, err := auth.ExtractUserClaims(authHeader)
@@ -68,9 +71,18 @@ func AuthMiddleware(l *logger.Logger) gin.HandlerFunc {
 			return
 		}
 
-		// Armazena as informações do usuário no contexto do Gin para uso nos Handlers
+		// 1. Busca o nome atualizado no MariaDB usando o Keycloak ID (sub)
+		if db != nil {
+			var user database.Patient
+			if err := db.Select("name").Where("keycloak_id = ?", claims.PatientID).First(&user).Error; err == nil {
+				claims.Name = user.Name
+			}
+		}
+
+		// 2. Armazena as informações simplificadas no contexto do Gin
 		c.Set("userID", claims.PatientID)
 		c.Set("userName", claims.Name)
+		c.Set("userEmail", claims.Email)
 		c.Set("emailVerified", claims.EmailVerified)
 		c.Next()
 	}

@@ -109,7 +109,7 @@ func main() {
 	// --- Rotas com Autenticação + DPoP (Perfil/Dados Sensíveis) ---
 	authGroup := router.Group("/api")
 	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase, appLogger))
-	authGroup.Use(userHttp.AuthMiddleware(appLogger))
+	authGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger))
 	{
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
