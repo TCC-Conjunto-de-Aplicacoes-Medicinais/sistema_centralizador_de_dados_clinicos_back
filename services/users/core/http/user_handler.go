@@ -102,7 +102,6 @@ func (h *UserHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
 		return
 	}
-	proofJWT := c.GetHeader("DPoP")
 
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -117,7 +116,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.LoginService.Login(proofJWT, req)
+	resp, err := h.LoginService.Login(req)
 	if err != nil {
 		msg := err.Error()
 		h.Logger.Log(logger.LogEntry{
@@ -163,7 +162,6 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
 		return
 	}
-	proofJWT := c.GetHeader("DPoP")
 
 	var req models.RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -178,7 +176,7 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.LoginService.Refresh(proofJWT, req)
+	resp, err := h.LoginService.Refresh(req)
 	if err != nil {
 		msg := err.Error()
 		h.Logger.Log(logger.LogEntry{
@@ -212,20 +210,21 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        DPoP    header   string                   true  "DPoP Proof JWT (RFC 9449)"
-// @Param        id      path     string                   true  "ID do Usuário"
-// @Param        request body     models.UpdateUserRequest true  "Dados para atualização"
-// @Success      200     {object} map[string]string
-// @Failure      400     {object} map[string]string
-// @Failure      500     {object} map[string]string
-// @Router       /api/users/{id} [put]
+// @Param        Authorization header   string                   true  "Access Token (Bearer or DPoP)"
+// @Param        DPoP          header   string                   true  "DPoP Proof JWT (RFC 9449)"
+// @Param        request       body     models.UpdateUserRequest true  "Dados para atualização"
+// @Success      200           {object} map[string]string
+// @Failure      400           {object} map[string]string
+// @Failure      401           {object} map[string]string
+// @Failure      500           {object} map[string]string
+// @Router       /api/users [put]
 func (h *UserHandler) UpdateUser(c *gin.Context) {
 	if h.UpdateUserService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
 		return
 	}
-	proofJWT := c.GetHeader("DPoP")
-	id := c.Param("id")
+	// O ID e a validação DPoP já foram processados pelos middlewares
+	id := c.GetString("userID")
 
 	var req models.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -240,7 +239,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.UpdateUserService.UpdateUser(proofJWT, id, req); err != nil {
+	if err := h.UpdateUserService.UpdateUser(id, req); err != nil {
 		msg := err.Error()
 		h.Logger.Log(logger.LogEntry{
 			OriginService: "users",

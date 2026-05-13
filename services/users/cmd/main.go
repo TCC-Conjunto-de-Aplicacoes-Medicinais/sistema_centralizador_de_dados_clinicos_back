@@ -92,17 +92,28 @@ func main() {
 		AllowCredentials: false,
 	}))
 
+	// --- Rotas Públicas ---
 	router.GET("/api/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"Message": "OK",
-		})
+		c.JSON(http.StatusOK, gin.H{"Message": "OK"})
 	})
-
 	router.POST("/api/signup", userHandler.Signup)
-	router.POST("/api/login", userHandler.Login)
-	router.POST("/api/refresh", userHandler.Refresh)
-	router.PUT("/api/users/:id", userHandler.UpdateUser)
-	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+
+	// --- Rotas com DPoP Obrigatório ---
+	dpopGroup := router.Group("/api")
+	dpopGroup.Use(userHttp.DPoPMiddleware(dpopUseCase))
+	{
+		dpopGroup.POST("/login", userHandler.Login)
+		dpopGroup.POST("/refresh", userHandler.Refresh)
+	}
+
+	// --- Rotas com Autenticação + DPoP ---
+	authGroup := router.Group("/api")
+	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase))
+	authGroup.Use(userHttp.AuthMiddleware())
+	{
+		authGroup.PUT("/users", userHandler.UpdateUser)
+		authGroup.POST("/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

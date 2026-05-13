@@ -206,7 +206,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{id}": {
+        "/api/users": {
             "put": {
                 "description": "Atualiza dados do usuário (nome, telefone, endereço) no MariaDB e Keycloak",
                 "consumes": [
@@ -222,16 +222,16 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "DPoP Proof JWT (RFC 9449)",
-                        "name": "DPoP",
+                        "description": "Access Token (Bearer or DPoP)",
+                        "name": "Authorization",
                         "in": "header",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "description": "ID do Usuário",
-                        "name": "id",
-                        "in": "path",
+                        "description": "DPoP Proof JWT (RFC 9449)",
+                        "name": "DPoP",
+                        "in": "header",
                         "required": true
                     },
                     {
@@ -256,6 +256,15 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

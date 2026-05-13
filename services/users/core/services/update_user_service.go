@@ -28,13 +28,9 @@ func NewUpdateUserService(db *gorm.DB, kc *sharedConfig.KeycloakAuth, dpopUC *us
 	}
 }
 
-func (s *UpdateUserService) UpdateUser(proofJWT, id string, req models.UpdateUserRequest) error {
-	if err := s.DPoPUseCase.Execute(proofJWT); err != nil {
-		return err
-	}
-
+func (s *UpdateUserService) UpdateUser(id string, req models.UpdateUserRequest) error {
 	var patient database.Patients
-	if err := s.DB.Where("id = ?", id).First(&patient).Error; err != nil {
+	if err := s.DB.Where("keycloak_id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
 	}
 
@@ -66,14 +62,14 @@ func (s *UpdateUserService) UpdateUser(proofJWT, id string, req models.UpdateUse
 
 	// 2. Atualiza Coleção de E-mails (Lógica de substituição total para a coleção)
 	if len(req.Emails) > 0 {
-		if err := tx.Where("patient_id = ?", id).Delete(&database.PatientEmail{}).Error; err != nil {
+		if err := tx.Where("patient_id = ?", patient.Id).Delete(&database.PatientEmail{}).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("erro ao limpar e-mails antigos: %w", err)
 		}
 		for _, e := range req.Emails {
 			newEmail := database.PatientEmail{
 				Id:        gocql.TimeUUID().String(),
-				PatientID: id,
+				PatientID: patient.Id,
 				Email:     e.Email,
 				Principal: e.Principal,
 			}
@@ -89,14 +85,14 @@ func (s *UpdateUserService) UpdateUser(proofJWT, id string, req models.UpdateUse
 
 	// 3. Atualiza Coleção de Telefones
 	if len(req.Phones) > 0 {
-		if err := tx.Where("patient_id = ?", id).Delete(&database.PatientPhone{}).Error; err != nil {
+		if err := tx.Where("patient_id = ?", patient.Id).Delete(&database.PatientPhone{}).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("erro ao limpar telefones antigos: %w", err)
 		}
 		for _, p := range req.Phones {
 			newPhone := database.PatientPhone{
 				Id:        gocql.TimeUUID().String(),
-				PatientID: id,
+				PatientID: patient.Id,
 				Phone:     p.Phone,
 				Principal: p.Principal,
 			}
@@ -109,14 +105,14 @@ func (s *UpdateUserService) UpdateUser(proofJWT, id string, req models.UpdateUse
 
 	// 4. Atualiza Coleção de Endereços
 	if len(req.Addresses) > 0 {
-		if err := tx.Where("patient_id = ?", id).Delete(&database.PatientAddress{}).Error; err != nil {
+		if err := tx.Where("patient_id = ?", patient.Id).Delete(&database.PatientAddress{}).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("erro ao limpar endereços antigos: %w", err)
 		}
 		for _, a := range req.Addresses {
 			newAddr := database.PatientAddress{
 				Id:        gocql.TimeUUID().String(),
-				PatientID: id,
+				PatientID: patient.Id,
 				Address:   a.Address,
 				Principal: a.Principal,
 			}

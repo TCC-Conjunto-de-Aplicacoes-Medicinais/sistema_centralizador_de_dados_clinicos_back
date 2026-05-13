@@ -15,15 +15,13 @@ func NewValidateDPoPUseCase(store *dpop.ReplayStore, baseURL string) *ValidateDP
 	return &ValidateDPoPUseCase{ReplayStore: store, BaseURL: baseURL}
 }
 
-// Execute valida o DPoP proof para o endpoint de login.
-func (uc *ValidateDPoPUseCase) Execute(proofJWT string) error {
+// Execute valida o DPoP proof para um endpoint específico.
+func (uc *ValidateDPoPUseCase) Execute(proofJWT, htm, htu string) error {
 	if proofJWT == "" {
 		return errors.New("header DPoP ausente")
 	}
 
-	expectedHTU := uc.BaseURL + "/api/login"
-
-	jti, err := dpop.ParseAndValidate(proofJWT, "POST", expectedHTU)
+	jti, err := dpop.ParseAndValidate(proofJWT, htm, htu)
 	if err != nil {
 		return err
 	}

@@ -252,21 +252,21 @@ paths:
       summary: Cadastro de Paciente
       tags:
       - users
-  /api/users/{id}:
+  /api/users:
     put:
       consumes:
       - application/json
       description: Atualiza dados do usuário (nome, telefone, endereço) no MariaDB
         e Keycloak
       parameters:
+      - description: Access Token (Bearer or DPoP)
+        in: header
+        name: Authorization
+        required: true
+        type: string
       - description: DPoP Proof JWT (RFC 9449)
         in: header
         name: DPoP
-        required: true
-        type: string
-      - description: ID do Usuário
-        in: path
-        name: id
         required: true
         type: string
       - description: Dados para atualização
@@ -286,6 +286,12 @@ paths:
             type: object
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
           schema:
             additionalProperties:
               type: string

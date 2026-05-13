@@ -21,11 +21,7 @@ func NewLoginService(kc *sharedConfig.KeycloakAuth, dpopUC *usecase.ValidateDPoP
 	}
 }
 
-func (s *LoginService) Login(proofJWT string, req models.LoginRequest) (*models.LoginResponse, error) {
-	if err := s.DPoPUseCase.Execute(proofJWT); err != nil {
-		return nil, err
-	}
-
+func (s *LoginService) Login(req models.LoginRequest) (*models.LoginResponse, error) {
 	ctx := context.Background()
 	jwt, err := s.Keycloak.Client.Login(
 		ctx,
@@ -47,11 +43,7 @@ func (s *LoginService) Login(proofJWT string, req models.LoginRequest) (*models.
 	}, nil
 }
 
-func (s *LoginService) Refresh(proofJWT string, req models.RefreshRequest) (*models.RefreshResponse, error) {
-	if err := s.DPoPUseCase.Execute(proofJWT); err != nil {
-		return nil, err
-	}
-
+func (s *LoginService) Refresh(req models.RefreshRequest) (*models.RefreshResponse, error) {
 	ctx := context.Background()
 	jwt, err := s.Keycloak.Client.RefreshToken(
 		ctx,
