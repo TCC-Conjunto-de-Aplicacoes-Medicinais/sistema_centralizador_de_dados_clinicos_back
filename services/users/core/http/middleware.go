@@ -76,12 +76,14 @@ func AuthMiddleware(db *gorm.DB, l *logger.Logger) gin.HandlerFunc {
 			var user database.Patient
 			if err := db.Select("name").Where("keycloak_id = ?", claims.PatientID).First(&user).Error; err == nil {
 				claims.Name = user.Name
+				claims.FullName = user.Name // Define o nome completo vindo do banco
 			}
 		}
 
 		// 2. Armazena as informações simplificadas no contexto do Gin
 		c.Set("userID", claims.PatientID)
 		c.Set("userName", claims.Name)
+		c.Set("userFullName", claims.FullName)
 		c.Set("userEmail", claims.Email)
 		c.Set("emailVerified", claims.EmailVerified)
 		c.Next()

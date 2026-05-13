@@ -13,6 +13,7 @@ type UserClaims struct {
 	Name          string `json:"name"`
 	EmailVerified bool   `json:"email_verified"`
 	Email         string `json:"email"`
+	FullName      string `json:"full_name"`
 }
 
 // ExtractUserClaims extrai claims úteis do JWT sem validar a assinatura.
