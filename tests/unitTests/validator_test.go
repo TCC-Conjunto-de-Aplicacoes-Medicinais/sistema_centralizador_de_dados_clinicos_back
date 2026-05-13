@@ -1,6 +1,7 @@
 package unitTests
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -10,9 +11,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"math/big"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/dpop"
 	"github.com/stretchr/testify/assert"
+	"crypto/rsa"
 )
 
 func generateValidES256DPoP() (string, string) {
@@ -158,3 +161,60 @@ func TestParseAndValidate_ExpiredIAT(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "iat fora da janela")
 }
+
+func TestParseAndValidate_ValidRS256(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	jwk := map[string]interface{}{
+		"kty": "RSA",
+		"n":   base64.RawURLEncoding.EncodeToString(privateKey.N.Bytes()),
+		"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(privateKey.E)).Bytes()),
+	}
+	jwkBytes, _ := json.Marshal(jwk)
+
+	hdr := map[string]interface{}{"typ": "dpop+jwt", "alg": "RS256", "jwk": json.RawMessage(jwkBytes)}
+	hdrBytes, _ := json.Marshal(hdr)
+	hdr64 := base64.RawURLEncoding.EncodeToString(hdrBytes)
+
+	claims := map[string]interface{}{"jti": "rsa-jti", "htm": "POST", "htu": "http://localhost:8000/api/login", "iat": time.Now().Unix()}
+	claimsBytes, _ := json.Marshal(claims)
+	claims64 := base64.RawURLEncoding.EncodeToString(claimsBytes)
+
+	signingInput := hdr64 + "." + claims64
+	hash := sha256.Sum256([]byte(signingInput))
+	sigBytes, _ := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hash[:])
+	jwt := signingInput + "." + base64.RawURLEncoding.EncodeToString(sigBytes)
+
+	jti, err := dpop.ParseAndValidate(jwt, "POST", "http://localhost:8000/api/login")
+	assert.NoError(t, err)
+	assert.Equal(t, "rsa-jti", jti)
+}
+
+func TestParseAndValidate_RSAKeyTooShort(t *testing.T) {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 1024) // < 2048
+	jwk := map[string]interface{}{
+		"kty": "RSA",
+		"n":   base64.RawURLEncoding.EncodeToString(privateKey.N.Bytes()),
+		"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(privateKey.E)).Bytes()),
+	}
+	jwkBytes, _ := json.Marshal(jwk)
+	hdr := map[string]interface{}{"typ": "dpop+jwt", "alg": "RS256", "jwk": json.RawMessage(jwkBytes)}
+	hb, _ := json.Marshal(hdr)
+	jwt := base64.RawURLEncoding.EncodeToString(hb) + ".payload.sig"
+
+	_, err := dpop.ParseAndValidate(jwt, "POST", "http://localhost")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "rejeitada")
+}
+
+func TestParseAndValidate_InvalidKTY(t *testing.T) {
+	jwk := map[string]interface{}{"kty": "oct"}
+	jb, _ := json.Marshal(jwk)
+	hdr := map[string]interface{}{"typ": "dpop+jwt", "alg": "ES256", "jwk": json.RawMessage(jb)}
+	hb, _ := json.Marshal(hdr)
+	jwt := base64.RawURLEncoding.EncodeToString(hb) + ".payload.sig"
+
+	_, err := dpop.ParseAndValidate(jwt, "POST", "http://localhost")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "kty \"oct\" não suportado")
+}
+
