@@ -212,6 +212,7 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
+// @Param        DPoP    header   string                   true  "DPoP Proof JWT (RFC 9449)"
 // @Param        id      path     string                   true  "ID do Usuário"
 // @Param        request body     models.UpdateUserRequest true  "Dados para atualização"
 // @Success      200     {object} map[string]string
@@ -223,6 +224,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
 		return
 	}
+	proofJWT := c.GetHeader("DPoP")
 	id := c.Param("id")
 
 	var req models.UpdateUserRequest
@@ -238,15 +240,22 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.UpdateUserService.UpdateUser(id, req); err != nil {
+	if err := h.UpdateUserService.UpdateUser(proofJWT, id, req); err != nil {
+		msg := err.Error()
 		h.Logger.Log(logger.LogEntry{
 			OriginService: "users",
 			ActionType:    "update_user",
-			Description:   "erro ao atualizar usuário " + id + ": " + err.Error(),
+			Description:   "erro ao atualizar usuário " + id + ": " + msg,
 			OriginIP:      c.ClientIP(),
 			ResultStatus:  "error",
 		})
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		
+		if strings.Contains(msg, "dpop") || strings.Contains(msg, "DPoP") || strings.Contains(msg, "header DPoP") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
+			return
+		}
+		
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
 

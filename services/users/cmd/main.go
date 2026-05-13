@@ -76,7 +76,7 @@ func main() {
 	replayStore := dpop.NewReplayStore(2 * time.Minute)
 	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
 	loginService := services.NewLoginService(keycloakAuth, dpopUseCase)
-	updateUserService := services.NewUpdateUserService(mariaDB, keycloakAuth)
+	updateUserService := services.NewUpdateUserService(mariaDB, keycloakAuth, dpopUseCase)
 	verifyEmailService := services.NewVerifyEmailService(mariaDB, keycloakAuth)
 
 	appLogger := logger.NewLogger(cassandraDB.Core)

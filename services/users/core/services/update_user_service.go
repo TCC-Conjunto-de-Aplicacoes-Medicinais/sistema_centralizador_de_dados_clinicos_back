@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Nerzal/gocloak/v13"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	sharedConfig "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
@@ -13,18 +14,24 @@ import (
 )
 
 type UpdateUserService struct {
-	DB       *gorm.DB
-	Keycloak *sharedConfig.KeycloakAuth
+	DB          *gorm.DB
+	Keycloak    *sharedConfig.KeycloakAuth
+	DPoPUseCase *usecase.ValidateDPoPUseCase
 }
 
-func NewUpdateUserService(db *gorm.DB, kc *sharedConfig.KeycloakAuth) *UpdateUserService {
+func NewUpdateUserService(db *gorm.DB, kc *sharedConfig.KeycloakAuth, dpopUC *usecase.ValidateDPoPUseCase) *UpdateUserService {
 	return &UpdateUserService{
-		DB:       db,
-		Keycloak: kc,
+		DB:          db,
+		Keycloak:    kc,
+		DPoPUseCase: dpopUC,
 	}
 }
 
-func (s *UpdateUserService) UpdateUser(id string, req models.UpdateUserRequest) error {
+func (s *UpdateUserService) UpdateUser(proofJWT, id string, req models.UpdateUserRequest) error {
+	if err := s.DPoPUseCase.Execute(proofJWT); err != nil {
+		return err
+	}
+
 	var patient database.Patients
 	if err := s.DB.Where("id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
