@@ -45,7 +45,11 @@ func ExtractUserClaims(authHeader string) (*UserClaims, error) {
 	if sub, ok := claims["sub"].(string); ok {
 		userClaims.PatientID = sub
 	} else {
-		return nil, errors.New("campo 'sub' (ID do usuário) não encontrado no token")
+		keys := []string{}
+		for k := range claims {
+			keys = append(keys, k)
+		}
+		return nil, errors.New("campo 'sub' não encontrado. Campos presentes: " + strings.Join(keys, ", "))
 	}
 
 	if name, ok := claims["name"].(string); ok {

@@ -25,7 +25,7 @@ func NewVerifyEmailService(db *gorm.DB, kc *sharedConfig.KeycloakAuth) *VerifyEm
 
 func (s *VerifyEmailService) SendVerificationEmail(id string) error {
 	var patient database.Patient
-	if err := s.DB.Where("id = ?", id).First(&patient).Error; err != nil {
+	if err := s.DB.Where("keycloak_id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
 	}
 
