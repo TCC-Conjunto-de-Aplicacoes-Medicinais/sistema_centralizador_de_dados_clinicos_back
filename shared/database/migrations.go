@@ -11,7 +11,9 @@ func RunMigrations(db *gorm.DB) error {
 
 	err := db.AutoMigrate(
 		&Patients{},
-		// &Doctors{},
+		&Doctors{},
+		&Clinics{},
+		&ClinicDoctor{},
 		// &Appointments{},
 		// etc...
 	)

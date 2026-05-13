@@ -71,7 +71,7 @@ func main() {
 
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8000"
+		baseURL = "http://localhost:8002"
 	}
 	replayStore := dpop.NewReplayStore(2 * time.Minute)
 	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
