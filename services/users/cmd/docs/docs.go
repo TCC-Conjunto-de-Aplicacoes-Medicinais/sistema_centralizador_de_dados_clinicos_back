@@ -42,7 +42,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest"
+                            "$ref": "#/definitions/models.LoginRequest"
                         }
                     }
                 ],
@@ -50,7 +50,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse"
+                            "$ref": "#/definitions/models.LoginResponse"
                         }
                     },
                     "400": {
@@ -110,7 +110,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest"
+                            "$ref": "#/definitions/models.RefreshRequest"
                         }
                     }
                 ],
@@ -118,7 +118,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse"
+                            "$ref": "#/definitions/models.RefreshResponse"
                         }
                     },
                     "400": {
@@ -171,7 +171,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest"
+                            "$ref": "#/definitions/models.SignupRequest"
                         }
                     }
                 ],
@@ -222,6 +222,13 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "DPoP Proof JWT (RFC 9449)",
+                        "name": "DPoP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "ID do Usuário",
                         "name": "id",
                         "in": "path",
@@ -233,7 +240,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest"
+                            "$ref": "#/definitions/models.UpdateUserRequest"
                         }
                     }
                 ],
@@ -320,7 +327,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device": {
+        "models.Device": {
             "type": "object",
             "required": [
                 "device_name",
@@ -335,7 +342,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest": {
+        "models.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -351,7 +358,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse": {
+        "models.LoginResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -368,7 +375,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest": {
+        "models.RefreshRequest": {
             "type": "object",
             "required": [
                 "refresh_token"
@@ -379,7 +386,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse": {
+        "models.RefreshResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -396,7 +403,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest": {
+        "models.SignupRequest": {
             "type": "object",
             "required": [
                 "cpf",
@@ -410,7 +417,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "device": {
-                    "$ref": "#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device"
+                    "$ref": "#/definitions/models.Device"
                 },
                 "email": {
                     "type": "string"
@@ -424,10 +431,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest": {
+        "models.UpdateUserRequest": {
             "type": "object",
             "properties": {
                 "address": {
+                    "type": "string"
+                },
+                "emergency_contact": {
                     "type": "string"
                 },
                 "name": {

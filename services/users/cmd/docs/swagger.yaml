@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device:
+  models.Device:
     properties:
       device_name:
         type: string
@@ -10,7 +10,7 @@ definitions:
     - device_name
     - public_key
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest:
+  models.LoginRequest:
     properties:
       email:
         type: string
@@ -21,7 +21,7 @@ definitions:
     - email
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse:
+  models.LoginResponse:
     properties:
       access_token:
         type: string
@@ -32,14 +32,14 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest:
+  models.RefreshRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse:
+  models.RefreshResponse:
     properties:
       access_token:
         type: string
@@ -50,12 +50,12 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest:
+  models.SignupRequest:
     properties:
       cpf:
         type: string
       device:
-        $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device'
+        $ref: '#/definitions/models.Device'
       email:
         type: string
       name:
@@ -70,9 +70,11 @@ definitions:
     - name
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest:
+  models.UpdateUserRequest:
     properties:
       address:
+        type: string
+      emergency_contact:
         type: string
       name:
         type: string
@@ -104,14 +106,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse'
+            $ref: '#/definitions/models.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -150,14 +152,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest'
+          $ref: '#/definitions/models.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse'
+            $ref: '#/definitions/models.RefreshResponse'
         "400":
           description: Bad Request
           schema:
@@ -190,7 +192,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest'
+          $ref: '#/definitions/models.SignupRequest'
       produces:
       - application/json
       responses:
@@ -222,6 +224,11 @@ paths:
       description: Atualiza dados do usuário (nome, telefone, endereço) no MariaDB
         e Keycloak
       parameters:
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
       - description: ID do Usuário
         in: path
         name: id
@@ -232,7 +239,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest'
+          $ref: '#/definitions/models.UpdateUserRequest'
       produces:
       - application/json
       responses:
