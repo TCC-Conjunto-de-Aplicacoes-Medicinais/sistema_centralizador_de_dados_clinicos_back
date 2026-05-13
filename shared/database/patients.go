@@ -22,6 +22,8 @@ type Patients struct {
 	DeletedAt        time.Time `gorm:"type:timestamp;" json:"deleted_at"`
 
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
+
+	Exams []Exams `gorm:"foreignKey:PatientId;references:Id" json:"exams,omitempty"`
 }
 
 func (Patients) TableName() string {

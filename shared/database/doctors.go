@@ -23,6 +23,7 @@ type Doctors struct {
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
 
 	Clinics []Clinics `gorm:"many2many:clinic_doctors;foreignKey:Id;joinForeignKey:DoctorID;References:ID;joinReferences:ClinicID" json:"clinics,omitempty"`
+	Permissions []DoctorPermission `gorm:"foreignKey:DoctorID;references:Id" json:"permissions,omitempty"`
 }
 
 func (Doctors) TableName() string {

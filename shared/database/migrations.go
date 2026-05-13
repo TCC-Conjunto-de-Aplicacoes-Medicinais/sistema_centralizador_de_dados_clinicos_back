@@ -14,6 +14,8 @@ func RunMigrations(db *gorm.DB) error {
 		&Doctors{},
 		&Clinics{},
 		&ClinicDoctor{},
+		&Exams{},
+		&DoctorPermission{},
 		// &Appointments{},
 		// etc...
 	)
