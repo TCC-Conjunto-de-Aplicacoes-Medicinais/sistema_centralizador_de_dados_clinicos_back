@@ -109,7 +109,6 @@ services:
     environment:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - TZ=America/Sao_Paulo
-      # - N8N_SECURE_COOKIE=false # REMOVA quando tiver domínio HTTPS
     volumes:
       - n8n_data:/home/node/.n8n
     deploy:
@@ -117,53 +116,7 @@ services:
         limits:
           memory: 512M
 
-  etcd:
-    image: bitnami/etcd:3.5.11
-    container_name: etcd_server
-    restart: always
-    environment:
-      ALLOW_NONE_AUTHENTICATION: yes
-      ETCD_ADVERTISE_CLIENT_URLS: http://etcd_server:2379
-      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
-    volumes:
-      - etcd_data:/bitnami/etcd
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-  apisix:
-    image: apache/apisix:3.8.0-debian
-    container_name: apisix_server
-    restart: always
-    depends_on:
-      - etcd
-    ports:
-      - "9080:9080" # Porta para o tráfego HTTP das APIs
-      - "9443:9443" # Porta para o tráfego HTTPS das APIs
-      - "9180:9180" # Admin API (Use apenas internamente em produção!)
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  apisix-dashboard:
-    image: apache/apisix-dashboard:3.0.1-alpine
-    container_name: apisix_dashboard
-    restart: always
-    depends_on:
-      - etcd
-    ports:
-      - "9000:9000"
-    volumes:
-      - ./apisix_dashboard_conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
 volumes:
   mariadb_data:
   cassandra_data:
   n8n_data:
-  etcd_data:
