@@ -28,10 +28,20 @@ func TestAuthMiddleware_Success(t *testing.T) {
 	router.Use(userHttp.AuthMiddleware(nil))
 	router.GET("/test", func(c *gin.Context) {
 		userID := c.GetString("userID")
-		c.String(http.StatusOK, userID)
+		userName := c.GetString("userName")
+		emailVerified := c.GetBool("emailVerified")
+		c.JSON(http.StatusOK, gin.H{
+			"id":       userID,
+			"name":     userName,
+			"verified": emailVerified,
+		})
 	})
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": "user-789"})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":            "user-789",
+		"name":           "Middleware User",
+		"email_verified": true,
+	})
 	tokenString, _ := token.SignedString([]byte("secret"))
 
 	w := httptest.NewRecorder()
@@ -41,7 +51,9 @@ func TestAuthMiddleware_Success(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "user-789", w.Body.String())
+	assert.Contains(t, w.Body.String(), "user-789")
+	assert.Contains(t, w.Body.String(), "Middleware User")
+	assert.Contains(t, w.Body.String(), "true")
 }
 
 func TestAuthMiddleware_Failure(t *testing.T) {

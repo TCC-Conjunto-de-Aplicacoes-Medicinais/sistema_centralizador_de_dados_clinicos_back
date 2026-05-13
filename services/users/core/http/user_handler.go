@@ -137,7 +137,11 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	// Extrai ID do Keycloak do token para logar o sucesso
-	userID, _ := auth.ExtractSubFromToken("Bearer " + resp.AccessToken)
+	claims, _ := auth.ExtractUserClaims("Bearer " + resp.AccessToken)
+	userID := ""
+	if claims != nil {
+		userID = claims.PatientID
+	}
 
 	h.Logger.Log(logger.LogEntry{
 		OriginService: "users",

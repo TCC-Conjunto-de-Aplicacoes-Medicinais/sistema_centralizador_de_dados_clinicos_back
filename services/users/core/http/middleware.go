@@ -54,7 +54,7 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase, l *logger.Logger) gin.H
 func AuthMiddleware(l *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		userID, err := auth.ExtractSubFromToken(authHeader)
+		claims, err := auth.ExtractUserClaims(authHeader)
 		if err != nil {
 			l.Log(logger.LogEntry{
 				OriginService: "users",
@@ -68,8 +68,10 @@ func AuthMiddleware(l *logger.Logger) gin.HandlerFunc {
 			return
 		}
 
-		// Armazena o ID do Keycloak no contexto do Gin
-		c.Set("userID", userID)
+		// Armazena as informações do usuário no contexto do Gin para uso nos Handlers
+		c.Set("userID", claims.PatientID)
+		c.Set("userName", claims.Name)
+		c.Set("emailVerified", claims.EmailVerified)
 		c.Next()
 	}
 }

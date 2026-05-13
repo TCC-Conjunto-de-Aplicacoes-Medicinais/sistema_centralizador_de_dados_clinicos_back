@@ -7,32 +7,53 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// ExtractSubFromToken extrai o campo 'sub' do JWT sem validar a assinatura.
-// Útil quando a validação da assinatura já foi feita por um gateway ou quando
-// queremos apenas identificar o usuário para busca no banco.
-func ExtractSubFromToken(authHeader string) (string, error) {
+// UserClaims contém informações básicas extraídas do Access Token.
+type UserClaims struct {
+	PatientID     string `json:"sub"`
+	Name          string `json:"name"`
+	EmailVerified bool   `json:"email_verified"`
+}
+
+// ExtractUserClaims extrai claims úteis do JWT sem validar a assinatura.
+// A validação deve ser feita previamente por um middleware de segurança.
+func ExtractUserClaims(authHeader string) (*UserClaims, error) {
 	if authHeader == "" {
-		return "", errors.New("header Authorization ausente")
+		return nil, errors.New("header Authorization ausente")
 	}
 
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || (parts[0] != "Bearer" && parts[0] != "DPoP") {
-		return "", errors.New("formato de token inválido")
+		return nil, errors.New("formato de token inválido")
 	}
 
 	tokenString := parts[1]
 	
-	// Parse sem validar assinatura (Keycloak/APISIX validam a assinatura antes)
 	token, _, err := new(jwt.Parser).ParseUnverified(tokenString, jwt.MapClaims{})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if sub, ok := claims["sub"].(string); ok {
-			return sub, nil
-		}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("não foi possível ler as claims do token")
 	}
 
-	return "", errors.New("campo 'sub' não encontrado no token")
+	userClaims := &UserClaims{}
+
+	if sub, ok := claims["sub"].(string); ok {
+		userClaims.PatientID = sub
+	} else {
+		return nil, errors.New("campo 'sub' (ID do usuário) não encontrado no token")
+	}
+
+	if name, ok := claims["name"].(string); ok {
+		userClaims.Name = name
+	}
+
+	if verified, ok := claims["email_verified"].(bool); ok {
+		userClaims.EmailVerified = verified
+	}
+
+	return userClaims, nil
 }
+

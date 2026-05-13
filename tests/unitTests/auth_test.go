@@ -16,23 +16,25 @@ func TestExtractSubFromToken_Success(t *testing.T) {
 	tokenString, _ := token.SignedString([]byte("secret"))
 
 	authHeader := "Bearer " + tokenString
-	sub, err := auth.ExtractSubFromToken(authHeader)
+	claims, err := auth.ExtractUserClaims(authHeader)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "user-123", sub)
+	assert.Equal(t, "user-123", claims.PatientID)
 }
 
 func TestExtractSubFromToken_DPoP_Success(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": "user-456",
+		"name": "Test User",
 	})
 	tokenString, _ := token.SignedString([]byte("secret"))
 
 	authHeader := "DPoP " + tokenString
-	sub, err := auth.ExtractSubFromToken(authHeader)
+	claims, err := auth.ExtractUserClaims(authHeader)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "user-456", sub)
+	assert.Equal(t, "user-456", claims.PatientID)
+	assert.Equal(t, "Test User", claims.Name)
 }
 
 func TestExtractSubFromToken_Failures(t *testing.T) {
@@ -49,7 +51,7 @@ func TestExtractSubFromToken_Failures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := auth.ExtractSubFromToken(tt.header)
+			_, err := auth.ExtractUserClaims(tt.header)
 			assert.Error(t, err)
 		})
 	}
