@@ -19,7 +19,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Login de Paciente com DPoP",
                 "parameters": [
@@ -87,7 +87,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Atualização de Access Token",
                 "parameters": [
@@ -216,7 +216,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Access Token (Bearer or DPoP)",
+                        "description": "Access Token (Bearer)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -285,7 +285,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Enviar E-mail de Verificação",
                 "parameters": [

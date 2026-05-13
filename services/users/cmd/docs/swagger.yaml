@@ -169,7 +169,7 @@ paths:
             type: object
       summary: Login de Paciente com DPoP
       tags:
-      - users
+      - auth
   /api/refresh:
     post:
       consumes:
@@ -215,7 +215,7 @@ paths:
             type: object
       summary: Atualização de Access Token
       tags:
-      - users
+      - auth
   /api/signup:
     post:
       consumes:
@@ -259,7 +259,7 @@ paths:
       description: Atualiza dados do usuário (nome, telefone, endereço) no MariaDB
         e Keycloak
       parameters:
-      - description: Access Token (Bearer or DPoP)
+      - description: Access Token (Bearer)
         in: header
         name: Authorization
         required: true
@@ -338,5 +338,5 @@ paths:
             type: object
       summary: Enviar E-mail de Verificação
       tags:
-      - users
+      - auth
 swagger: "2.0"

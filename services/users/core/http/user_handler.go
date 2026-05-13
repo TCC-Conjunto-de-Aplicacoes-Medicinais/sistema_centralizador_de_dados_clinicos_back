@@ -88,7 +88,7 @@ func (h *UserHandler) Signup(c *gin.Context) {
 
 // @Summary      Login de Paciente com DPoP
 // @Description  Autentica um paciente via Keycloak exigindo DPoP proof (RFC 9449) no header
-// @Tags         users
+// @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        DPoP    header   string             true  "DPoP Proof JWT (RFC 9449)"
@@ -152,7 +152,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 // @Summary      Atualização de Access Token
 // @Description  Emite um novo token usando um RefreshToken via Keycloak exigindo DPoP proof no header
-// @Tags         users
+// @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        DPoP    header   string             true  "DPoP Proof JWT (RFC 9449)"
@@ -215,7 +215,7 @@ func (h *UserHandler) Refresh(c *gin.Context) {
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        Authorization header   string                   true  "Access Token (Bearer or DPoP)"
+// @Param        Authorization header   string                   true  "Access Token (Bearer)"
 // @Param        DPoP          header   string                   true  "DPoP Proof JWT (RFC 9449)"
 // @Param        request       body     models.UpdateUserRequest true  "Dados para atualização"
 // @Success      200           {object} map[string]string
@@ -253,12 +253,12 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 			OriginIP:      c.ClientIP(),
 			ResultStatus:  "error",
 		})
-		
+
 		if strings.Contains(msg, "dpop") || strings.Contains(msg, "DPoP") || strings.Contains(msg, "header DPoP") {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
 		return
 	}
@@ -276,7 +276,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 // @Summary      Enviar E-mail de Verificação
 // @Description  Solicita ao Keycloak o envio de um e-mail de verificação para o usuário
-// @Tags         users
+// @Tags         auth
 // @Produce      json
 // @Param        id      path     string  true  "ID do Usuário"
 // @Success      202     {object} map[string]string

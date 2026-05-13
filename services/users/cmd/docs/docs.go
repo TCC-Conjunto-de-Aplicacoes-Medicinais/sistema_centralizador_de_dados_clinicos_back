@@ -25,7 +25,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Login de Paciente com DPoP",
                 "parameters": [
@@ -93,7 +93,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Atualização de Access Token",
                 "parameters": [
@@ -222,7 +222,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Access Token (Bearer or DPoP)",
+                        "description": "Access Token (Bearer)",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -291,7 +291,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "auth"
                 ],
                 "summary": "Enviar E-mail de Verificação",
                 "parameters": [
