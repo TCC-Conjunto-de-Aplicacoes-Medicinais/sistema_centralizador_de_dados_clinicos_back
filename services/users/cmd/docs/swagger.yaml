@@ -1,5 +1,14 @@
 basePath: /
 definitions:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest:
+    properties:
+      address:
+        type: string
+      principal:
+        type: boolean
+    required:
+    - address
+    type: object
   github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device:
     properties:
       device_name:
@@ -9,6 +18,15 @@ definitions:
     required:
     - device_name
     - public_key
+    type: object
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest:
+    properties:
+      email:
+        type: string
+      principal:
+        type: boolean
+    required:
+    - email
     type: object
   github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest:
     properties:
@@ -31,6 +49,15 @@ definitions:
         type: string
       token_type:
         type: string
+    type: object
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest:
+    properties:
+      phone:
+        type: string
+      principal:
+        type: boolean
+    required:
+    - phone
     type: object
   github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest:
     properties:
@@ -72,14 +99,22 @@ definitions:
     type: object
   github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest:
     properties:
-      address:
-        type: string
+      addresses:
+        items:
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest'
+        type: array
+      emails:
+        items:
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest'
+        type: array
       emergency_contact:
         type: string
       name:
         type: string
-      phone:
-        type: string
+      phones:
+        items:
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest'
+        type: array
     type: object
 host: api.pohinc.com.br
 info:

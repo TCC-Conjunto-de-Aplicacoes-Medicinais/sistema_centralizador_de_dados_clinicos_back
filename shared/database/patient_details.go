@@ -19,6 +19,7 @@ type PatientPhone struct {
 	Id        string `gorm:"column:id;type:char(36);primaryKey" json:"id"`
 	PatientID string `gorm:"column:patient_id;type:char(36);not null" json:"patient_id"`
 	Phone     string `gorm:"column:phone;type:varchar(20);not null" json:"phone"`
+	Principal bool   `gorm:"column:principal;type:boolean;not null;default:false" json:"principal"`
 }
 
 func (PatientPhone) TableName() string {
@@ -30,6 +31,7 @@ type PatientAddress struct {
 	Id        string `gorm:"column:id;type:char(36);primaryKey" json:"id"`
 	PatientID string `gorm:"column:patient_id;type:char(36);not null" json:"patient_id"`
 	Address   string `gorm:"column:address;type:varchar(255);not null" json:"address"`
+	Principal bool   `gorm:"column:principal;type:boolean;not null;default:false" json:"principal"`
 }
 
 func (PatientAddress) TableName() string {
