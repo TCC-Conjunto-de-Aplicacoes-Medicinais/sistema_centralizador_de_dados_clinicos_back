@@ -26,7 +26,7 @@ import (
 // @title           Sistema Centralizador de Dados Clínicos API
 // @version         1.0
 // @description     API para gerenciamento de pacientes e dispositivos via Keycloak e polyglot persistence.
-// @host            localhost:8000
+// @host            api.pohinc.com.br
 // @BasePath        /
 func main() {
 	envLoaded := false

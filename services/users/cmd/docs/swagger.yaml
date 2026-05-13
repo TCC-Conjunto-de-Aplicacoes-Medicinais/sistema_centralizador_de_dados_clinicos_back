@@ -81,7 +81,7 @@ definitions:
       phone:
         type: string
     type: object
-host: localhost:8000
+host: api.pohinc.com.br
 info:
   contact: {}
   description: API para gerenciamento de pacientes e dispositivos via Keycloak e polyglot
