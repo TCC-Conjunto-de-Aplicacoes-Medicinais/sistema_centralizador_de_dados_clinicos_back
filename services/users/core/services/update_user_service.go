@@ -29,7 +29,7 @@ func NewUpdateUserService(db *gorm.DB, kc *sharedConfig.KeycloakAuth, dpopUC *us
 }
 
 func (s *UpdateUserService) UpdateUser(id string, req models.UpdateUserRequest) error {
-	var patient database.Patients
+	var patient database.Patient
 	if err := s.DB.Where("keycloak_id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
 	}

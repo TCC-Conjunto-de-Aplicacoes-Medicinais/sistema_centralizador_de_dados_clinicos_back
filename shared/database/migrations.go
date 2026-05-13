@@ -10,11 +10,11 @@ func RunMigrations(db *gorm.DB) error {
 	log.Println("⚙️ Iniciando sincronização e estruturação do banco de dados (MariaDB)...")
 
 	err := db.AutoMigrate(
-		&Patients{},
-		&Doctors{},
-		&Clinics{},
+		&Patient{},
+		&Doctor{},
+		&Clinic{},
 		&ClinicDoctor{},
-		&Exams{},
+		&Exam{},
 		&DoctorPermission{},
 		&PatientEmail{},
 		&PatientPhone{},

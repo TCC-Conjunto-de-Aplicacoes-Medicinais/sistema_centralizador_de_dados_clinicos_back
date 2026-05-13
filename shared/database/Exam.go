@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Exams struct {
+type Exam struct {
 	gorm.Model
 	Id          string    `gorm:"column:id;type:char(36);primaryKey" json:"id"`
 	PatientId   string    `gorm:"column:patient_id;type:char(36);not null" json:"patient_id"`
@@ -17,11 +17,11 @@ type Exams struct {
 	CreatedAt   time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"type:timestamp;" json:"updated_at"`
 
-	Patient Patients `gorm:"foreignKey:PatientId;references:Id" json:"patient"`
-	Clinic  Clinics  `gorm:"foreignKey:ClinicId;references:ID" json:"clinic"`
+	Patient     Patient            `gorm:"foreignKey:PatientId;references:Id" json:"patient"`
+	Clinic      Clinic             `gorm:"foreignKey:ClinicId;references:ID" json:"clinic"`
 	Permissions []DoctorPermission `gorm:"foreignKey:ExamID;references:Id" json:"permissions,omitempty"`
 }
 
-func (Exams) TableName() string {
-	return "exams"
+func (Exam) TableName() string {
+	return "exam"
 }

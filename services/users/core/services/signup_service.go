@@ -67,7 +67,7 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 		return fmt.Errorf("erro ao converter id do keycloak para uuid: %w", err)
 	}
 
-	patient := database.Patients{
+	patient := database.Patient{
 		Id:         uuid.String(),
 		Name:       req.Name,
 		CPF:        req.CPF,

@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Doctors struct {
+type Doctor struct {
 	gorm.Model
 	Id        string    `gorm:"type:char(36);primaryKey" json:"id"`
 	Name      string    `gorm:"type:varchar(150);not null" json:"name"`
@@ -22,10 +22,10 @@ type Doctors struct {
 
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
 
-	Clinics []Clinics `gorm:"many2many:clinic_doctors;foreignKey:Id;joinForeignKey:DoctorID;References:ID;joinReferences:ClinicID" json:"clinics,omitempty"`
+	Clinics     []Clinic           `gorm:"many2many:clinic_doctor;foreignKey:Id;joinForeignKey:DoctorID;References:ID;joinReferences:ClinicID" json:"clinics,omitempty"`
 	Permissions []DoctorPermission `gorm:"foreignKey:DoctorID;references:Id" json:"permissions,omitempty"`
 }
 
-func (Doctors) TableName() string {
-	return "doctors"
+func (Doctor) TableName() string {
+	return "doctor"
 }

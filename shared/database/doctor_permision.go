@@ -9,10 +9,10 @@ type DoctorPermission struct {
 	ExamID        string `gorm:"column:exam_id;type:char(36);not null" json:"exam_id"`
 	BreakTheGlass string `gorm:"column:break_the_glass;type:varchar(100);" json:"break_the_glass"`
 
-	Doctor Doctors `gorm:"foreignKey:DoctorID;references:Id" json:"doctor"`
-	Exam   Exams   `gorm:"foreignKey:ExamID;references:Id" json:"exam"`
+	Doctor Doctor `gorm:"foreignKey:DoctorID;references:Id" json:"doctor"`
+	Exam   Exam   `gorm:"foreignKey:ExamID;references:Id" json:"exam"`
 }
 
 func (DoctorPermission) TableName() string {
-	return "doctor_permissions"
+	return "doctor_permission"
 }

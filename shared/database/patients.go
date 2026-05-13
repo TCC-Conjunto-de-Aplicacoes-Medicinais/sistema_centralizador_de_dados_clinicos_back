@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Patients struct {
+type Patient struct {
 	gorm.Model
 	Id               string           `gorm:"type:char(36);primaryKey" json:"id"`
 	Name             string           `gorm:"type:varchar(150);not null" json:"name"`
@@ -23,9 +23,9 @@ type Patients struct {
 
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
 
-	Exams []Exams `gorm:"foreignKey:PatientId;references:Id" json:"exams,omitempty"`
+	Exams []Exam `gorm:"foreignKey:PatientId;references:Id" json:"exams,omitempty"`
 }
 
-func (Patients) TableName() string {
-	return "patients"
+func (Patient) TableName() string {
+	return "patient"
 }

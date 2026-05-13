@@ -11,7 +11,7 @@ type PatientEmail struct {
 }
 
 func (PatientEmail) TableName() string {
-	return "patient_emails"
+	return "patient_email"
 }
 
 type PatientPhone struct {
@@ -23,7 +23,7 @@ type PatientPhone struct {
 }
 
 func (PatientPhone) TableName() string {
-	return "patient_phones"
+	return "patient_phone"
 }
 
 type PatientAddress struct {
@@ -35,5 +35,5 @@ type PatientAddress struct {
 }
 
 func (PatientAddress) TableName() string {
-	return "patient_addresses"
+	return "patient_address"
 }

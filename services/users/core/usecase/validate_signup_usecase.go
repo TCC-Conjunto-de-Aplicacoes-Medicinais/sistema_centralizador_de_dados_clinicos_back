@@ -35,7 +35,7 @@ func (uc *ValidateSignupUseCase) Execute(ctx context.Context, req models.SignupR
 
 	var count int64
 
-	if err := uc.DB.Model(&database.Patients{}).Where("cpf = ?", req.CPF).Count(&count).Error; err != nil {
+	if err := uc.DB.Model(&database.Patient{}).Where("cpf = ?", req.CPF).Count(&count).Error; err != nil {
 		return errors.New("erro ao verificar integridade do CPF no banco de dados")
 	}
 	if count > 0 {
