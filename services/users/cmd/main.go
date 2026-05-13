@@ -112,7 +112,7 @@ func main() {
 	authGroup.Use(userHttp.AuthMiddleware(appLogger))
 	{
 		authGroup.PUT("/users", userHandler.UpdateUser)
-		authGroup.POST("/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

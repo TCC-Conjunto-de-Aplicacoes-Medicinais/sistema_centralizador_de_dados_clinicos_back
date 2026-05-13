@@ -28,8 +28,8 @@ func setupUnitRouter() *gin.Engine {
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
 	router.POST("/api/refresh", userHandler.Refresh)
-	router.PUT("/api/users/:id", userHandler.UpdateUser)
-	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+	router.PUT("/api/users", userHandler.UpdateUser)
+	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	
 	return router
 }
@@ -87,7 +87,7 @@ func TestUpdateUserHandler_BindJSON_Error(t *testing.T) {
 	payloadInvalido := []byte(`{"name": 123}`)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("PUT", "/api/users/1", bytes.NewBuffer(payloadInvalido))
+	req := httptest.NewRequest("PUT", "/api/users", bytes.NewBuffer(payloadInvalido))
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(w, req)
@@ -103,8 +103,8 @@ func TestServicesNil(t *testing.T) {
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
 	router.POST("/api/refresh", userHandler.Refresh)
-	router.PUT("/api/users/:id", userHandler.UpdateUser)
-	router.POST("/api/users/:id/send-verify-email", userHandler.SendVerifyEmail)
+	router.PUT("/api/users", userHandler.UpdateUser)
+	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 
 	tests := []struct {
 		Method string
@@ -113,8 +113,8 @@ func TestServicesNil(t *testing.T) {
 		{"POST", "/api/signup"},
 		{"POST", "/api/login"},
 		{"POST", "/api/refresh"},
-		{"PUT", "/api/users/1"},
-		{"POST", "/api/users/1/send-verify-email"},
+		{"PUT", "/api/users"},
+		{"POST", "/api/users/send-verify-email"},
 	}
 
 	for _, tt := range tests {

@@ -305,14 +305,19 @@ paths:
       summary: Atualização de Usuário
       tags:
       - users
-  /api/users/{id}/send-verify-email:
+  /api/users/send-verify-email:
     post:
       description: Solicita ao Keycloak o envio de um e-mail de verificação para o
         usuário
       parameters:
-      - description: ID do Usuário
-        in: path
-        name: id
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
         required: true
         type: string
       produces:

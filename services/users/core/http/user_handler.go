@@ -282,17 +282,22 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 // @Description  Solicita ao Keycloak o envio de um e-mail de verificação para o usuário
 // @Tags         auth
 // @Produce      json
-// @Param        id      path     string  true  "ID do Usuário"
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
 // @Success      202     {object} map[string]string
 // @Failure      400     {object} map[string]string
 // @Failure      500     {object} map[string]string
-// @Router       /api/users/{id}/send-verify-email [post]
+// @Router       /api/users/send-verify-email [post]
 func (h *UserHandler) SendVerifyEmail(c *gin.Context) {
 	if h.VerifyEmailService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
 		return
 	}
-	id := c.Param("id")
+	id := c.GetString("userID")
+	if id == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
 
 	if err := h.VerifyEmailService.SendVerificationEmail(id); err != nil {
 		h.Logger.Log(logger.LogEntry{

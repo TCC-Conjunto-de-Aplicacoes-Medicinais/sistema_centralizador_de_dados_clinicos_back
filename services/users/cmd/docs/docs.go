@@ -284,7 +284,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/users/{id}/send-verify-email": {
+        "/api/users/send-verify-email": {
             "post": {
                 "description": "Solicita ao Keycloak o envio de um e-mail de verificação para o usuário",
                 "produces": [
@@ -297,9 +297,16 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "ID do Usuário",
-                        "name": "id",
-                        "in": "path",
+                        "description": "Access Token (Bearer)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "DPoP Proof JWT (RFC 9449)",
+                        "name": "DPoP",
+                        "in": "header",
                         "required": true
                     }
                 ],
