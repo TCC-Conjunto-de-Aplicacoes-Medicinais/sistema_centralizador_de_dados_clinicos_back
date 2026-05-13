@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
@@ -19,12 +18,9 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase) gin.HandlerFunc {
 			return
 		}
 
-		// Obtém a URL base (pode vir do .env ou ser reconstruída)
-		baseURL := os.Getenv("BASE_URL")
-		if baseURL == "" {
-			baseURL = "https://api.pohinc.com.br"
-		}
-		
+		// Obtém a URL base injetada no UseCase
+		baseURL := dpopUC.BaseURL
+
 		// O HTU no DPoP deve ser o caminho completo chamado
 		htu := baseURL + c.Request.URL.Path
 		htm := c.Request.Method
