@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/services"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 	"github.com/gin-gonic/gin"
@@ -135,12 +136,16 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Extrai ID do Keycloak do token para logar o sucesso
+	userID, _ := auth.ExtractSubFromToken("Bearer " + resp.AccessToken)
+
 	h.Logger.Log(logger.LogEntry{
 		OriginService: "users",
 		ActionType:    "login",
 		Description:   "login realizado com sucesso: " + req.CPF,
 		OriginIP:      c.ClientIP(),
 		ResultStatus:  "success",
+		UserID:        userID,
 	})
 	c.JSON(http.StatusOK, resp)
 }
@@ -264,6 +269,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		Description:   "usuário " + id + " atualizado com sucesso",
 		OriginIP:      c.ClientIP(),
 		ResultStatus:  "success",
+		UserID:        id,
 	})
 	c.JSON(http.StatusOK, gin.H{"message": "Dados atualizados com sucesso"})
 }
@@ -302,6 +308,7 @@ func (h *UserHandler) SendVerifyEmail(c *gin.Context) {
 		Description:   "e-mail de verificação disparado para usuário " + id,
 		OriginIP:      c.ClientIP(),
 		ResultStatus:  "success",
+		UserID:        id,
 	})
 	c.JSON(http.StatusAccepted, gin.H{"message": "E-mail de verificação enviado com sucesso"})
 }

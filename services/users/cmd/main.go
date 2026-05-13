@@ -98,18 +98,18 @@ func main() {
 	})
 	router.POST("/api/signup", userHandler.Signup)
 
-	// --- Rotas com DPoP Obrigatório ---
+	// --- Rotas com DPoP Obrigatório (Login/Refresh) ---
 	dpopGroup := router.Group("/api")
-	dpopGroup.Use(userHttp.DPoPMiddleware(dpopUseCase))
+	dpopGroup.Use(userHttp.DPoPMiddleware(dpopUseCase, appLogger))
 	{
 		dpopGroup.POST("/login", userHandler.Login)
 		dpopGroup.POST("/refresh", userHandler.Refresh)
 	}
 
-	// --- Rotas com Autenticação + DPoP ---
+	// --- Rotas com Autenticação + DPoP (Perfil/Dados Sensíveis) ---
 	authGroup := router.Group("/api")
-	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase))
-	authGroup.Use(userHttp.AuthMiddleware())
+	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase, appLogger))
+	authGroup.Use(userHttp.AuthMiddleware(appLogger))
 	{
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/:id/send-verify-email", userHandler.SendVerifyEmail)

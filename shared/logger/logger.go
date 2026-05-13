@@ -12,7 +12,7 @@ type LogEntry struct {
 	Description   string
 	OriginIP      string
 	ResultStatus  string
-	UserID        *gocql.UUID
+	UserID        string // Agora aceita string (ID do Keycloak ou UUID do banco)
 }
 
 type Logger struct {
@@ -31,8 +31,15 @@ func (l *Logger) Log(entry LogEntry) error {
 	logID := gocql.TimeUUID()
 	now := time.Now()
 
-	const query = `INSERT INTO register_logs
-		(log_id, event_hour, reference_date, origin_service, action_type, description, origin_ip, result_status, user_id)
+	var userID *gocql.UUID
+	if entry.UserID != "" {
+		if u, err := gocql.ParseUUID(entry.UserID); err == nil {
+			userID = &u
+		}
+	}
+
+	const query = `INSERT INTO register_logs 
+		(log_id, event_hour, reference_date, origin_service, action_type, description, origin_ip, result_status, user_id) 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	return l.session.Query(query,
@@ -44,6 +51,6 @@ func (l *Logger) Log(entry LogEntry) error {
 		entry.Description,
 		entry.OriginIP,
 		entry.ResultStatus,
-		entry.UserID,
+		userID,
 	).Exec()
 }

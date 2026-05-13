@@ -5,14 +5,22 @@ import (
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/gin-gonic/gin"
 )
 
 // DPoPMiddleware valida o proof DPoP para qualquer rota.
-func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase) gin.HandlerFunc {
+func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase, l *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		proofJWT := c.GetHeader("DPoP")
 		if proofJWT == "" {
+			l.Log(logger.LogEntry{
+				OriginService: "users",
+				ActionType:    "dpop_validation",
+				Description:   "header DPoP ausente na rota: " + c.Request.URL.Path,
+				OriginIP:      c.ClientIP(),
+				ResultStatus:  "error",
+			})
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "header DPoP ausente"})
 			c.Abort()
 			return
@@ -26,6 +34,13 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase) gin.HandlerFunc {
 		htm := c.Request.Method
 
 		if err := dpopUC.Execute(proofJWT, htm, htu); err != nil {
+			l.Log(logger.LogEntry{
+				OriginService: "users",
+				ActionType:    "dpop_validation",
+				Description:   "falha na validação DPoP: " + err.Error(),
+				OriginIP:      c.ClientIP(),
+				ResultStatus:  "error",
+			})
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "falha na validação DPoP: " + err.Error()})
 			c.Abort()
 			return
@@ -36,11 +51,18 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase) gin.HandlerFunc {
 }
 
 // AuthMiddleware extrai a identidade do usuário do JWT e injeta no contexto.
-func AuthMiddleware() gin.HandlerFunc {
+func AuthMiddleware(l *logger.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		userID, err := auth.ExtractSubFromToken(authHeader)
 		if err != nil {
+			l.Log(logger.LogEntry{
+				OriginService: "users",
+				ActionType:    "auth_identification",
+				Description:   "falha ao identificar usuário via token: " + err.Error(),
+				OriginIP:      c.ClientIP(),
+				ResultStatus:  "error",
+			})
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "token inválido ou ausente: " + err.Error()})
 			c.Abort()
 			return
