@@ -40,6 +40,9 @@ func (s *UpdateUserService) UpdateUser(id string, req models.UpdateUserRequest) 
 	if req.Address != "" {
 		updates["address"] = req.Address
 	}
+	if req.EmergencyContact != "" {
+		updates["emergency_contact"] = req.EmergencyContact
+	}
 
 	if len(updates) == 0 {
 		return errors.New("nenhum dado para atualizar")

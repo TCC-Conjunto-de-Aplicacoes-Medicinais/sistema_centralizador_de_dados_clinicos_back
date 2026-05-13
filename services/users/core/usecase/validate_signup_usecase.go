@@ -3,6 +3,9 @@ package usecase
 import (
 	"context"
 	"errors"
+	"regexp"
+	"strconv"
+	"strings"
 
 	sharedConfig "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
@@ -22,6 +25,14 @@ func NewValidateSignupUseCase(db *gorm.DB, kc *sharedConfig.KeycloakAuth) *Valid
 }
 
 func (uc *ValidateSignupUseCase) Execute(ctx context.Context, req models.SignupRequest) error {
+	if !isValidCPF(req.CPF) {
+		return errors.New("validação falhou: formato de CPF inválido")
+	}
+
+	if !isValidEmail(req.Email) {
+		return errors.New("validação falhou: formato de e-mail inválido")
+	}
+
 	var count int64
 
 	if err := uc.DB.Model(&database.Patients{}).Where("cpf = ?", req.CPF).Count(&count).Error; err != nil {
@@ -51,4 +62,52 @@ func (uc *ValidateSignupUseCase) Execute(ctx context.Context, req models.SignupR
 	}
 
 	return nil
+}
+
+func isValidCPF(cpf string) bool {
+	cpf = strings.ReplaceAll(cpf, ".", "")
+	cpf = strings.ReplaceAll(cpf, "-", "")
+	if len(cpf) != 11 {
+		return false
+	}
+	allSame := true
+	for i := 1; i < 11; i++ {
+		if cpf[i] != cpf[0] {
+			allSame = false
+			break
+		}
+	}
+	if allSame {
+		return false
+	}
+	sum := 0
+	for i := 0; i < 9; i++ {
+		num, _ := strconv.Atoi(string(cpf[i]))
+		sum += num * (10 - i)
+	}
+	rem := (sum * 10) % 11
+	if rem == 10 || rem == 11 {
+		rem = 0
+	}
+	if strconv.Itoa(rem) != string(cpf[9]) {
+		return false
+	}
+	sum = 0
+	for i := 0; i < 10; i++ {
+		num, _ := strconv.Atoi(string(cpf[i]))
+		sum += num * (11 - i)
+	}
+	rem = (sum * 10) % 11
+	if rem == 10 || rem == 11 {
+		rem = 0
+	}
+	if strconv.Itoa(rem) != string(cpf[10]) {
+		return false
+	}
+	return true
+}
+
+func isValidEmail(email string) bool {
+	re := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	return re.MatchString(email)
 }
