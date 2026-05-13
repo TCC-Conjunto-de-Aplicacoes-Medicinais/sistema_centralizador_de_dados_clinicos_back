@@ -88,9 +88,9 @@ services:
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
       MARIADB_DB: ${MARIADB_DB}
-      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      BASE_URL: ${BASE_URL:-http://localhost:8002}
     ports:
-      - "8000:8000"
+      - "8002:8002"
     depends_on:
       - mariadb
       - keycloak

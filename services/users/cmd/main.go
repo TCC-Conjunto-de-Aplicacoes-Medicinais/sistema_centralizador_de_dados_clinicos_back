@@ -106,7 +106,7 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	if err := router.Run(":8000"); err != nil {
+	if err := router.Run(":8002"); err != nil {
 		log.Fatal("Error starting server: ", err)
 	}
 }
