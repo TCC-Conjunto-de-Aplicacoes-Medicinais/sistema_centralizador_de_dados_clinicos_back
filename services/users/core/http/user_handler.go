@@ -123,7 +123,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		h.Logger.Log(logger.LogEntry{
 			OriginService: "users",
 			ActionType:    "login",
-			Description:   "falha no login (" + req.Email + "): " + msg,
+			Description:   "falha no login (" + req.CPF + "): " + msg,
 			OriginIP:      c.ClientIP(),
 			ResultStatus:  "error",
 		})
@@ -139,7 +139,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 	h.Logger.Log(logger.LogEntry{
 		OriginService: "users",
 		ActionType:    "login",
-		Description:   "login realizado com sucesso: " + req.Email,
+		Description:   "login realizado com sucesso: " + req.CPF,
 		OriginIP:      c.ClientIP(),
 		ResultStatus:  "success",
 	})

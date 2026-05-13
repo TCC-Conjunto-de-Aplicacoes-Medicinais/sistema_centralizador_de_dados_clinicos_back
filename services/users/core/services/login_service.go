@@ -32,7 +32,7 @@ func (s *LoginService) Login(proofJWT string, req models.LoginRequest) (*models.
 		s.Keycloak.ClientID,
 		s.Keycloak.ClientSecret,
 		s.Keycloak.Realm,
-		req.Email,
+		req.CPF,
 		req.Password,
 	)
 	if err != nil {

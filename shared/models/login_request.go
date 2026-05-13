@@ -1,7 +1,7 @@
 package models
 
 type LoginRequest struct {
-	Email    string `json:"email"    binding:"required,email"`
+	CPF      string `json:"cpf"      binding:"required,len=11"`
 	Password string `json:"password" binding:"required,min=8"`
 }
 

@@ -42,7 +42,7 @@ func (uc *ValidateSignupUseCase) Execute(ctx context.Context, req models.SignupR
 		return errors.New("validação falhou: o CPF informado já está em uso")
 	}
 
-	if err := uc.DB.Model(&database.Patients{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
+	if err := uc.DB.Model(&database.PatientEmail{}).Where("email = ?", req.Email).Count(&count).Error; err != nil {
 		return errors.New("erro ao verificar integridade do E-mail no banco de dados")
 	}
 	if count > 0 {

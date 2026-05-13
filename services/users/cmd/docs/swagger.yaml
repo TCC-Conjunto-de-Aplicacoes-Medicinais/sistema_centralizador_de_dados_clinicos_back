@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  models.Device:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device:
     properties:
       device_name:
         type: string
@@ -10,18 +10,18 @@ definitions:
     - device_name
     - public_key
     type: object
-  models.LoginRequest:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest:
     properties:
-      email:
+      cpf:
         type: string
       password:
         minLength: 8
         type: string
     required:
-    - email
+    - cpf
     - password
     type: object
-  models.LoginResponse:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse:
     properties:
       access_token:
         type: string
@@ -32,14 +32,14 @@ definitions:
       token_type:
         type: string
     type: object
-  models.RefreshRequest:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  models.RefreshResponse:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse:
     properties:
       access_token:
         type: string
@@ -50,12 +50,12 @@ definitions:
       token_type:
         type: string
     type: object
-  models.SignupRequest:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest:
     properties:
       cpf:
         type: string
       device:
-        $ref: '#/definitions/models.Device'
+        $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device'
       email:
         type: string
       name:
@@ -70,7 +70,7 @@ definitions:
     - name
     - password
     type: object
-  models.UpdateUserRequest:
+  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest:
     properties:
       address:
         type: string
@@ -106,14 +106,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.LoginRequest'
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.LoginResponse'
+            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -152,14 +152,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.RefreshRequest'
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.RefreshResponse'
+            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse'
         "400":
           description: Bad Request
           schema:
@@ -192,7 +192,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.SignupRequest'
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest'
       produces:
       - application/json
       responses:
@@ -239,7 +239,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/models.UpdateUserRequest'
+          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest'
       produces:
       - application/json
       responses:

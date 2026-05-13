@@ -44,7 +44,7 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 
 	enabled := true
 	keycloakUser := gocloak.User{
-		Username:      gocloak.StringP(req.Email),
+		Username:      gocloak.StringP(req.CPF),
 		Email:         gocloak.StringP(req.Email),
 		FirstName:     gocloak.StringP(req.Name),
 		LastName:      gocloak.StringP("-"),
@@ -70,9 +70,15 @@ func (s *SignupService) Signup(req models.SignupRequest) error {
 	patient := database.Patients{
 		Id:         uuid.String(),
 		Name:       req.Name,
-		Email:      req.Email,
 		CPF:        req.CPF,
 		KeycloakID: &keycloakID,
+		Emails: []database.PatientEmail{
+			{
+				Id:        gocql.TimeUUID().String(),
+				Email:     req.Email,
+				Principal: true,
+			},
+		},
 	}
 
 	if result := s.DB.Create(&patient); result.Error != nil {
