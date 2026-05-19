@@ -89,6 +89,10 @@ jobs:
             CASSANDRA_CORE_KEYSPACE=${{ secrets.CASSANDRA_CORE_KEYSPACE }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BASE_URL=${{ secrets.BASE_URL }}
+            SMTP_HOST=${{ secrets.SMTP_HOST }}
+            SMTP_PORT=${{ secrets.SMTP_PORT }}
+            SMTP_USER=${{ secrets.SMTP_USER }}
+            SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
             EOF
 
             # Baixa o docker-compose.yml e scripts atualizados do repositório
