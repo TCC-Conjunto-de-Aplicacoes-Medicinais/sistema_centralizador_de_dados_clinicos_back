@@ -321,3 +321,67 @@ func (h *UserHandler) SendVerifyEmail(c *gin.Context) {
 	})
 	c.JSON(http.StatusAccepted, gin.H{"message": "E-mail de verificação enviado com sucesso"})
 }
+
+type VerifyCodeRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
+// @Summary      Validar E-mail
+// @Description  Valida o código de verificação enviado por e-mail
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
+// @Param        request body     VerifyCodeRequest true "Código de verificação"
+// @Success      200     {object} map[string]string
+// @Failure      400     {object} map[string]string
+// @Failure      401     {object} map[string]string
+// @Failure      500     {object} map[string]string
+// @Router       /api/users/verify-email-code [post]
+func (h *UserHandler) VerifyCode(c *gin.Context) {
+	if h.VerifyEmailService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
+	id := c.GetString("userID")
+	if id == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	var req VerifyCodeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "verify_email",
+			Description:   "payload inválido para verificação de e-mail: " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.VerifyEmailService.VerifyCode(id, req.Code); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "verify_email",
+			Description:   "erro ao verificar e-mail do usuário " + id + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "verify_email",
+		Description:   "e-mail verificado com sucesso para usuário " + id,
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+		UserID:        id,
+	})
+	c.JSON(http.StatusOK, gin.H{"message": "E-mail verificado com sucesso"})
+}

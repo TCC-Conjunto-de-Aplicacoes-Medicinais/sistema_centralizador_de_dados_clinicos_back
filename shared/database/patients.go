@@ -23,6 +23,9 @@ type Patient struct {
 
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
 
+	Verify           bool   `gorm:"type:boolean;not null;default:false" json:"verify"`
+	VerificationCode string `gorm:"type:varchar(10)" json:"verification_code,omitempty"`
+
 	Exams []Exam `gorm:"foreignKey:PatientId;references:Id" json:"exams,omitempty"`
 }
 

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/http"
@@ -77,7 +78,18 @@ func main() {
 	dpopUseCase := usecase.NewValidateDPoPUseCase(replayStore, baseURL)
 	loginService := services.NewLoginService(keycloakAuth, dpopUseCase)
 	updateUserService := services.NewUpdateUserService(mariaDB, keycloakAuth, dpopUseCase)
-	verifyEmailService := services.NewVerifyEmailService(mariaDB, keycloakAuth)
+	smtpPort, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
+	if smtpPort == 0 {
+		smtpPort = 587
+	}
+	smtpConfig := config.InitSMTP(
+		os.Getenv("SMTP_HOST"),
+		smtpPort,
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+	smtpService := services.NewSMTPEmailService(smtpConfig)
+	verifyEmailService := services.NewVerifyEmailService(mariaDB, keycloakAuth, smtpService)
 
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, appLogger)
@@ -113,6 +125,7 @@ func main() {
 	{
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
+		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

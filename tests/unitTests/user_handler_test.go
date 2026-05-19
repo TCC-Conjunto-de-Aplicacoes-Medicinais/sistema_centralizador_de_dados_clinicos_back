@@ -30,6 +30,7 @@ func setupUnitRouter() *gin.Engine {
 	router.POST("/api/refresh", userHandler.Refresh)
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
+	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
 	
 	return router
 }
@@ -105,6 +106,7 @@ func TestServicesNil(t *testing.T) {
 	router.POST("/api/refresh", userHandler.Refresh)
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
+	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
 
 	tests := []struct {
 		Method string
@@ -115,6 +117,7 @@ func TestServicesNil(t *testing.T) {
 		{"POST", "/api/refresh"},
 		{"PUT", "/api/users"},
 		{"POST", "/api/users/send-verify-email"},
+		{"POST", "/api/users/verify-email-code"},
 	}
 
 	for _, tt := range tests {
