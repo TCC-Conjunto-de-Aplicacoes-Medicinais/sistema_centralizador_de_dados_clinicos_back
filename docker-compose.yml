@@ -122,19 +122,18 @@ services:
     container_name: ollama_pull_model
     depends_on:
       - ollama
-    entrypoint: /bin/sh
-    command: >
-      -c "
-      echo 'Aguardando o Ollama iniciar...'
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      echo "Aguardando o Ollama iniciar..."
       while ! ollama list >/dev/null 2>&1; do
         sleep 2
       done
-      echo 'Ollama iniciado. Baixando o modelo medgemma...'
+      echo "Ollama iniciado. Baixando o modelo medgemma..."
       ollama pull medgemma
-      echo 'Modelo medgemma baixado com sucesso!'
-      "
+      echo "Modelo medgemma baixado com sucesso!"
     environment:
       - OLLAMA_HOST=ollama_server:11434
+
 
 volumes:
   mariadb_data:
