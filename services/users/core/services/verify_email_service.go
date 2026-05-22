@@ -30,7 +30,7 @@ func NewVerifyEmailService(db *gorm.DB, kc *sharedConfig.KeycloakAuth, smtpServi
 func (s *VerifyEmailService) SendVerificationEmail(id string) error {
 	var patient database.Patient
 	// Pré-carrega Emails para pegar o e-mail principal
-	if err := s.DB.Preload("Emails").Where("keycloak_id = ?", id).First(&patient).Error; err != nil {
+	if err := s.DB.Preload("Emails").Where("patient_id = ?", id).First(&patient).Error; err != nil {
 		return errors.New("paciente não encontrado no banco de dados")
 	}
 
