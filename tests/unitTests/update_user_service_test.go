@@ -39,43 +39,46 @@ func TestUpdateUserService_UpdateUser_DBSave(t *testing.T) {
 	}
 
 	// 1. Mock select patient
-	mock.ExpectQuery("SELECT \\* FROM `patient` WHERE keycloak_id = \\?").
-		WithArgs(id, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "keycloak_id"}).AddRow(1, id))
+	mock.ExpectQuery("SELECT id, COALESCE\\(keycloak_id, ''\\), name FROM patient WHERE keycloak_id = \\?").
+		WithArgs(id).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "keycloak_id", "name"}).AddRow("1", id, "Nome Antigo"))
 
 	// 2. Transaction Start
 	mock.ExpectBegin()
 
 	// 3. Update patient name
-	mock.ExpectExec("UPDATE `patient`").
-		WithArgs("Novo Nome", sqlmock.AnyArg(), sqlmock.AnyArg()).
+	mock.ExpectExec("UPDATE patient SET name = \\?, updated_at = NOW\\(\\) WHERE id = \\?").
+		WithArgs("Novo Nome", "1").
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// 4. Soft Delete old emails
-	mock.ExpectExec("UPDATE `patient_email` SET `deleted_at`=\\?").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
+	mock.ExpectExec("UPDATE patient_email SET deleted_at = NOW\\(\\) WHERE patient_id = \\?").
+		WithArgs("1").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
 	// 5. Insert new email
-	mock.ExpectExec("INSERT INTO `patient_email`").
+	mock.ExpectExec("INSERT INTO patient_email").
+		WithArgs(sqlmock.AnyArg(), "1", "novo@teste.com", true).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// 6. Soft Delete old phones
-	mock.ExpectExec("UPDATE `patient_phone` SET `deleted_at`=\\?").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
+	mock.ExpectExec("UPDATE patient_phone SET deleted_at = NOW\\(\\) WHERE patient_id = \\?").
+		WithArgs("1").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	// 6b. Insert new phone
-	mock.ExpectExec("INSERT INTO `patient_phone`").
+	mock.ExpectExec("INSERT INTO patient_phone").
+		WithArgs(sqlmock.AnyArg(), "1", "11999998888", true).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// 7. Soft Delete old addresses
-	mock.ExpectExec("UPDATE `patient_address` SET `deleted_at`=\\?").
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg()).
+	mock.ExpectExec("UPDATE patient_address SET deleted_at = NOW\\(\\) WHERE patient_id = \\?").
+		WithArgs("1").
 		WillReturnResult(sqlmock.NewResult(0, 0))
 
 	// 7b. Insert new address
-	mock.ExpectExec("INSERT INTO `patient_address`").
+	mock.ExpectExec("INSERT INTO patient_address").
+		WithArgs(sqlmock.AnyArg(), "1", "Rua Teste, 123", true).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	// 8. Transaction Commit
