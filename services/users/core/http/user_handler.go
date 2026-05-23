@@ -16,6 +16,7 @@ type UserHandler struct {
 	LoginService       *services.LoginService
 	UpdateUserService  *services.UpdateUserService
 	VerifyEmailService *services.VerifyEmailService
+	GetUserService     *services.GetUserService
 	Logger             *logger.Logger
 }
 
@@ -24,6 +25,7 @@ func NewUserHandler(
 	loginService *services.LoginService,
 	updateUserService *services.UpdateUserService,
 	verifyEmailService *services.VerifyEmailService,
+	getUserService *services.GetUserService,
 	l *logger.Logger,
 ) *UserHandler {
 	return &UserHandler{
@@ -31,6 +33,7 @@ func NewUserHandler(
 		LoginService:       loginService,
 		UpdateUserService:  updateUserService,
 		VerifyEmailService: verifyEmailService,
+		GetUserService:     getUserService,
 		Logger:             l,
 	}
 }
@@ -276,6 +279,51 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		UserID:        id,
 	})
 	c.JSON(http.StatusOK, gin.H{"message": "Dados atualizados com sucesso"})
+}
+
+// @Summary      Perfil do Usuário
+// @Description  Retorna os dados editáveis do perfil do paciente (nome, telefone, endereço)
+// @Tags         users
+// @Produce      json
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
+// @Success      200     {object} services.UserProfileResponse
+// @Failure      401     {object} map[string]string
+// @Failure      500     {object} map[string]string
+// @Router       /api/users/profile [get]
+func (h *UserHandler) GetUserProfile(c *gin.Context) {
+	if h.GetUserService == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "serviço indisponível"})
+		return
+	}
+	id := c.GetString("userID")
+	if id == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	profile, err := h.GetUserService.GetProfile(id)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "get_profile",
+			Description:   "erro ao buscar perfil do usuário " + id + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "get_profile",
+		Description:   "perfil do usuário " + id + " consultado com sucesso",
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+		UserID:        id,
+	})
+	c.JSON(http.StatusOK, profile)
 }
 
 // @Summary      Enviar E-mail de Verificação

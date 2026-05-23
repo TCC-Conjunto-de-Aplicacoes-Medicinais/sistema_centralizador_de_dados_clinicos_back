@@ -23,6 +23,7 @@ func setupUnitRouter() *gin.Engine {
 		&services.UpdateUserService{},
 		&services.VerifyEmailService{},
 		nil,
+		nil,
 	)
 
 	router.POST("/api/signup", userHandler.Signup)
@@ -99,7 +100,7 @@ func TestUpdateUserHandler_BindJSON_Error(t *testing.T) {
 func TestServicesNil(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil)
 	
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)

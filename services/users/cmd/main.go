@@ -92,7 +92,8 @@ func main() {
 	verifyEmailService := services.NewVerifyEmailService(mariaDB, keycloakAuth, smtpService)
 
 	appLogger := logger.NewLogger(cassandraDB.Core)
-	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, appLogger)
+	getUserService := services.NewGetUserService(mariaDB)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
 
 	router := gin.Default()
 
@@ -123,6 +124,7 @@ func main() {
 	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase, appLogger))
 	authGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger))
 	{
+		authGroup.GET("/users/profile", userHandler.GetUserProfile)
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
