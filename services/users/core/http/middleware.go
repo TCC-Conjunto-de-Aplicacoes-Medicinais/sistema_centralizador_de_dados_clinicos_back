@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
@@ -86,6 +87,52 @@ func AuthMiddleware(db *gorm.DB, l *logger.Logger) gin.HandlerFunc {
 		c.Set("userFullName", claims.FullName)
 		c.Set("userEmail", claims.Email)
 		c.Set("emailVerified", claims.EmailVerified)
+		c.Next()
+	}
+}
+
+// ClinicAuthMiddleware valida o token de clinicas/médicos e injeta as credenciais no contexto.
+func ClinicAuthMiddleware(l *logger.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			l.Log(logger.LogEntry{
+				OriginService: "users",
+				ActionType:    "clinic_auth",
+				Description:   "header Authorization ausente",
+				OriginIP:      c.ClientIP(),
+				ResultStatus:  "error",
+			})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "header Authorization ausente"})
+			c.Abort()
+			return
+		}
+
+		secret := os.Getenv("JWT_SECRET")
+		if secret == "" {
+			secret = "centralizador_secret_chave_padrao"
+		}
+
+		claims, err := auth.ValidateClinicToken(authHeader, secret)
+		if err != nil {
+			l.Log(logger.LogEntry{
+				OriginService: "users",
+				ActionType:    "clinic_auth",
+				Description:   "token de clínica inválido ou expirado: " + err.Error(),
+				OriginIP:      c.ClientIP(),
+				ResultStatus:  "error",
+			})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token de clínica inválido ou expirado: " + err.Error()})
+			c.Abort()
+			return
+		}
+
+		// Armazena as informações da clínica e médico no contexto
+		c.Set("clinicID", claims.ClinicID)
+		c.Set("clinicalUserID", claims.ClinicalUserID)
+		c.Set("requesterEmail", claims.Email)
+		c.Set("requesterName", claims.FullName)
+		c.Set("requesterRole", claims.Role)
 		c.Next()
 	}
 }

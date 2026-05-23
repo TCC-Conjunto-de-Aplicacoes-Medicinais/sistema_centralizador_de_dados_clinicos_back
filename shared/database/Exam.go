@@ -14,6 +14,9 @@ type Exam struct {
 	LinkBucket  string    `gorm:"column:link_bucket;type:varchar(255);not null" json:"link_bucket"`
 	IdCassandra string    `gorm:"column:id_cassandra;type:char(36);not null" json:"id_cassandra"`
 	FlagActive  bool      `gorm:"column:flag_active;type:boolean;not null;default:true" json:"flag_active"`
+	Title       string    `gorm:"column:title;type:varchar(150);not null;default:''" json:"title"`
+	Provider    string    `gorm:"column:provider;type:varchar(150);default:''" json:"provider"`
+	Result      string    `gorm:"column:result;type:text" json:"result"`
 	CreatedAt   time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"type:timestamp;" json:"updated_at"`
 

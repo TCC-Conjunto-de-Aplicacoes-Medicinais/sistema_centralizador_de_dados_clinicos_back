@@ -64,6 +64,10 @@ func main() {
 		log.Fatalf("Erro ao rodar migrações do sistema central: %v", err)
 	}
 
+	if err := database.SeedDemoData(mariaDB); err != nil {
+		log.Fatalf("Erro ao rodar seed do sistema central: %v", err)
+	}
+
 	if err := database.RunCassandraMigrations(cassandraDB.Core); err != nil {
 		log.Fatalf("Erro ao criar tabelas do Cassandra: %v", err)
 	}
@@ -94,6 +98,7 @@ func main() {
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	getUserService := services.NewGetUserService(mariaDB)
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
+	clinicHandler := userHttp.NewClinicHandler(mariaDB, smtpService, appLogger)
 
 	router := gin.Default()
 
@@ -110,6 +115,17 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"Message": "OK"})
 	})
 	router.POST("/api/signup", userHandler.Signup)
+
+	// --- Rotas de Clínicas ---
+	router.POST("/api/auth/login", clinicHandler.LoginClinic)
+
+	clinicGroup := router.Group("/api")
+	clinicGroup.Use(userHttp.ClinicAuthMiddleware(appLogger))
+	{
+		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
+		clinicGroup.POST("/patients/request-data", clinicHandler.RequestPatientData)
+		clinicGroup.GET("/patients/:id/hl7-fhir", clinicHandler.ExportPatientHL7)
+	}
 
 	// --- Rotas com DPoP Obrigatório (Login/Refresh) ---
 	dpopGroup := router.Group("/api")

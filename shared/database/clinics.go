@@ -19,6 +19,8 @@ type Clinic struct {
 	BucketObj        string    `gorm:"column:bucket_obj;type:varchar(255)" json:"bucket_obj"`
 	Verify           bool      `gorm:"column:verify;default:0" json:"verify"`
 	VerificationCode string    `gorm:"column:verification_code;type:varchar(10)" json:"-"`
+	Type             string    `gorm:"column:type;type:varchar(20);not null;default:'internal'" json:"type"`
+	ApiURL           string    `gorm:"column:api_url;type:varchar(255)" json:"api_url"`
 	CreatedAt        time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt        time.Time `gorm:"type:timestamp;" json:"updated_at"`
 	DeletedAt        time.Time `gorm:"type:timestamp;" json:"deleted_at"`

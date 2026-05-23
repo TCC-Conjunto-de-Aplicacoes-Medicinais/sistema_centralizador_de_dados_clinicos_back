@@ -67,3 +67,40 @@ func ExtractUserClaims(authHeader string) (*UserClaims, error) {
 	return userClaims, nil
 }
 
+// ClinicClaims representa as claims para tokens de clinicas/médicos.
+type ClinicClaims struct {
+	ClinicID       string `json:"clinic_id"`
+	ClinicalUserID uint   `json:"clinical_user_id"`
+	Email          string `json:"email"`
+	FullName       string `json:"full_name"`
+	Role           string `json:"role"`
+	jwt.RegisteredClaims
+}
+
+// GenerateClinicToken gera um token assinado para clinicas.
+func GenerateClinicToken(claims ClinicClaims, secret string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// ValidateClinicToken valida o token assinado de clinicas.
+func ValidateClinicToken(tokenStr string, secret string) (*ClinicClaims, error) {
+	// Remove Bearer prefix se existir
+	if strings.HasPrefix(tokenStr, "Bearer ") {
+		tokenStr = strings.TrimPrefix(tokenStr, "Bearer ")
+	}
+
+	token, err := jwt.ParseWithClaims(tokenStr, &ClinicClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := token.Claims.(*ClinicClaims)
+	if !ok || !token.Valid {
+		return nil, errors.New("token inválido")
+	}
+	return claims, nil
+}
+
+

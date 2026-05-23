@@ -25,6 +25,8 @@ type Patient struct {
 
 	Verify           bool   `gorm:"type:boolean;not null;default:false" json:"verify"`
 	VerificationCode string `gorm:"type:varchar(10)" json:"verification_code,omitempty"`
+	Allergies        string `gorm:"column:allergies;type:text" json:"allergies_raw,omitempty"`
+	Medications      string `gorm:"column:medications;type:text" json:"medications_raw,omitempty"`
 
 	Exams []Exam `gorm:"foreignKey:PatientId;references:Id" json:"exams,omitempty"`
 }
