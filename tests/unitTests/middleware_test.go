@@ -118,3 +118,45 @@ func generateValidES256DPoPForURL(htm, htu string) (string, string) {
 	
 	return input + "." + base64.RawURLEncoding.EncodeToString(sig), jti
 }
+
+func TestDPoPMiddleware_Failure_MissingHeader(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	store := dpop.NewReplayStore(time.Minute)
+	uc := usecase.NewValidateDPoPUseCase(store, "http://example.com")
+
+	router.Use(userHttp.DPoPMiddleware(uc, nil))
+	router.GET("/test", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func TestDPoPMiddleware_Failure_InvalidProof(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+
+	store := dpop.NewReplayStore(time.Minute)
+	uc := usecase.NewValidateDPoPUseCase(store, "http://example.com")
+
+	router.Use(userHttp.DPoPMiddleware(uc, nil))
+	router.GET("/test", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("DPoP", "invalid.proof.jwt")
+
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+

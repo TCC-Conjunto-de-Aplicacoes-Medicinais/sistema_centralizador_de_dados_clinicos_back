@@ -433,3 +433,54 @@ func (h *UserHandler) VerifyCode(c *gin.Context) {
 	})
 	c.JSON(http.StatusOK, gin.H{"message": "E-mail verificado com sucesso"})
 }
+
+// @Summary      Compartilhar Exame
+// @Description  Mock de compartilhamento de exame que gera um log no Cassandra
+// @Tags         exams
+// @Accept       json
+// @Produce      json
+// @Param        Authorization header   string                   true  "Access Token (Bearer)"
+// @Param        DPoP          header   string                   true  "DPoP Proof JWT (RFC 9449)"
+// @Param        request       body     models.ShareExamRequest  true  "Dados para compartilhamento"
+// @Success      200           {object} map[string]string
+// @Failure      400           {object} map[string]string
+// @Failure      401           {object} map[string]string
+// @Failure      500           {object} map[string]string
+// @Router       /api/users/exams/share [post]
+func (h *UserHandler) ShareExam(c *gin.Context) {
+	id := c.GetString("userID")
+	if id == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	var req models.ShareExamRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "share_exam",
+			Description:   "payload inválido para compartilhamento: " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Gera o log simulando o compartilhamento no Cassandra
+	err := h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "share_exam",
+		Description:   "exame " + req.ExamID + " compartilhado com o médico " + req.DoctorName,
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+		UserID:        id,
+	})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao registrar log: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Exame compartilhado com sucesso!"})
+}
