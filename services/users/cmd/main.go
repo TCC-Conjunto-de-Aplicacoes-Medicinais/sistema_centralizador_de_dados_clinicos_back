@@ -93,7 +93,8 @@ func main() {
 
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	getUserService := services.NewGetUserService(mariaDB)
-	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
+	aiAnalysisService := services.NewAIAnalysisService(mariaDB, os.Getenv("GEMINI_API_KEY"), appLogger)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, aiAnalysisService, appLogger)
 
 	router := gin.Default()
 
@@ -129,6 +130,7 @@ func main() {
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
 		authGroup.POST("/users/exams/share", userHandler.ShareExam)
+		authGroup.POST("/ai/analyze", userHandler.AIAnalyze)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
