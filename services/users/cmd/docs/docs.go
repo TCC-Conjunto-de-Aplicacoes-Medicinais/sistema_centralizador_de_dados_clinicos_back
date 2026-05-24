@@ -15,6 +15,81 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/ai/analyze": {
+            "post": {
+                "description": "Envia um texto descrevendo exames ou sintomas e recebe uma análise gerada por IA (segunda opinião)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Análise de Exames por IA",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Access Token (Bearer)",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "DPoP Proof JWT (RFC 9449)",
+                        "name": "DPoP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Texto da consulta do paciente",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.AIAnalysisRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.AIAnalysisResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/login": {
             "post": {
                 "description": "Autentica um paciente via Keycloak exigindo DPoP proof (RFC 9449) no header",
@@ -507,7 +582,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/services_users_core_http.VerifyCodeRequest"
+                            "$ref": "#/definitions/http.VerifyCodeRequest"
                         }
                     }
                 ],
@@ -553,13 +628,35 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_services_users_core_http.VerifyCodeRequest": {
+        "http.VerifyCodeRequest": {
             "type": "object",
             "required": [
                 "code"
             ],
             "properties": {
                 "code": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AIAnalysisRequest": {
+            "type": "object",
+            "required": [
+                "query"
+            ],
+            "properties": {
+                "query": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.AIAnalysisResponse": {
+            "type": "object",
+            "properties": {
+                "analysis": {
+                    "type": "string"
+                },
+                "disclaimer": {
                     "type": "string"
                 }
             }
@@ -764,17 +861,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "services_users_core_http.VerifyCodeRequest": {
-            "type": "object",
-            "required": [
-                "code"
-            ],
-            "properties": {
-                "code": {
                     "type": "string"
                 }
             }

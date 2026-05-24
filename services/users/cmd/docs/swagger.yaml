@@ -1,11 +1,25 @@
 basePath: /
 definitions:
-  ? github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_services_users_core_http.VerifyCodeRequest
-  : properties:
+  http.VerifyCodeRequest:
+    properties:
       code:
         type: string
     required:
     - code
+    type: object
+  models.AIAnalysisRequest:
+    properties:
+      query:
+        type: string
+    required:
+    - query
+    type: object
+  models.AIAnalysisResponse:
+    properties:
+      analysis:
+        type: string
+      disclaimer:
+        type: string
     type: object
   models.AddressRequest:
     properties:
@@ -142,13 +156,6 @@ definitions:
       phone:
         type: string
     type: object
-  services_users_core_http.VerifyCodeRequest:
-    properties:
-      code:
-        type: string
-    required:
-    - code
-    type: object
 host: api.pohinc.com.br
 info:
   contact: {}
@@ -157,6 +164,57 @@ info:
   title: Sistema Centralizador de Dados Clínicos API
   version: "1.0"
 paths:
+  /api/ai/analyze:
+    post:
+      consumes:
+      - application/json
+      description: Envia um texto descrevendo exames ou sintomas e recebe uma análise
+        gerada por IA (segunda opinião)
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Texto da consulta do paciente
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AIAnalysisRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AIAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Análise de Exames por IA
+      tags:
+      - ai
   /api/login:
     post:
       consumes:
@@ -487,7 +545,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services_users_core_http.VerifyCodeRequest'
+          $ref: '#/definitions/http.VerifyCodeRequest'
       produces:
       - application/json
       responses:
