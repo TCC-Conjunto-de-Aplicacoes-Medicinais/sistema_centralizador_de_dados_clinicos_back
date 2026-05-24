@@ -1,6 +1,13 @@
 basePath: /
 definitions:
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest:
+  ? github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_services_users_core_http.VerifyCodeRequest
+  : properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  models.AddressRequest:
     properties:
       address:
         type: string
@@ -9,7 +16,7 @@ definitions:
     required:
     - address
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device:
+  models.Device:
     properties:
       device_name:
         type: string
@@ -19,7 +26,7 @@ definitions:
     - device_name
     - public_key
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest:
+  models.EmailRequest:
     properties:
       email:
         type: string
@@ -28,7 +35,7 @@ definitions:
     required:
     - email
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest:
+  models.LoginRequest:
     properties:
       cpf:
         type: string
@@ -39,7 +46,7 @@ definitions:
     - cpf
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse:
+  models.LoginResponse:
     properties:
       access_token:
         type: string
@@ -50,7 +57,7 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest:
+  models.PhoneRequest:
     properties:
       phone:
         type: string
@@ -59,14 +66,14 @@ definitions:
     required:
     - phone
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest:
+  models.RefreshRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse:
+  models.RefreshResponse:
     properties:
       access_token:
         type: string
@@ -77,12 +84,22 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest:
+  models.ShareExamRequest:
+    properties:
+      doctor_name:
+        type: string
+      exam_id:
+        type: string
+    required:
+    - doctor_name
+    - exam_id
+    type: object
+  models.SignupRequest:
     properties:
       cpf:
         type: string
       device:
-        $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device'
+        $ref: '#/definitions/models.Device'
       email:
         type: string
       name:
@@ -97,15 +114,15 @@ definitions:
     - name
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest:
+  models.UpdateUserRequest:
     properties:
       addresses:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest'
+          $ref: '#/definitions/models.AddressRequest'
         type: array
       emails:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest'
+          $ref: '#/definitions/models.EmailRequest'
         type: array
       emergency_contact:
         type: string
@@ -113,8 +130,24 @@ definitions:
         type: string
       phones:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest'
+          $ref: '#/definitions/models.PhoneRequest'
         type: array
+    type: object
+  services.UserProfileResponse:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    type: object
+  services_users_core_http.VerifyCodeRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
     type: object
 host: api.pohinc.com.br
 info:
@@ -141,14 +174,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse'
+            $ref: '#/definitions/models.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -187,14 +220,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest'
+          $ref: '#/definitions/models.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse'
+            $ref: '#/definitions/models.RefreshResponse'
         "400":
           description: Bad Request
           schema:
@@ -227,7 +260,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest'
+          $ref: '#/definitions/models.SignupRequest'
       produces:
       - application/json
       responses:
@@ -274,7 +307,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest'
+          $ref: '#/definitions/models.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -303,6 +336,95 @@ paths:
               type: string
             type: object
       summary: Atualização de Usuário
+      tags:
+      - users
+  /api/users/exams/share:
+    post:
+      consumes:
+      - application/json
+      description: Mock de compartilhamento de exame que gera um log no Cassandra
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Dados para compartilhamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ShareExamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Compartilhar Exame
+      tags:
+      - exams
+  /api/users/profile:
+    get:
+      description: Retorna os dados editáveis do perfil do paciente (nome, telefone,
+        endereço)
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Perfil do Usuário
       tags:
       - users
   /api/users/send-verify-email:
@@ -342,6 +464,58 @@ paths:
               type: string
             type: object
       summary: Enviar E-mail de Verificação
+      tags:
+      - auth
+  /api/users/verify-email-code:
+    post:
+      consumes:
+      - application/json
+      description: Valida o código de verificação enviado por e-mail
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Código de verificação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services_users_core_http.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Validar E-mail
       tags:
       - auth
 swagger: "2.0"
