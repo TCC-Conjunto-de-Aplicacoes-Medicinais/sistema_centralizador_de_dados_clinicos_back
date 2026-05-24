@@ -32,10 +32,15 @@ func MinIOConnect() *MinIOClient {
 		bucketName = "openhealth-app-exams"
 	}
 
+	secure := true
+	if os.Getenv("MINIO_SECURE") == "false" {
+		secure = false
+	}
+
 	// Inicializa o cliente MinIO
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: true,
+		Secure: secure,
 	})
 	if err != nil {
 		log.Fatalf("❌ Erro ao conectar no MinIO: %v", err)
