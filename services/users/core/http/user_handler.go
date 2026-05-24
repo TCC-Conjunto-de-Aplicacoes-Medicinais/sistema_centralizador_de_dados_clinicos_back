@@ -1,8 +1,11 @@
 package http
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/services"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
@@ -18,6 +21,7 @@ type UserHandler struct {
 	VerifyEmailService *services.VerifyEmailService
 	GetUserService     *services.GetUserService
 	AIAnalysisService  *services.AIAnalysisService
+	ExamService        *services.ExamService
 	Logger             *logger.Logger
 }
 
@@ -28,6 +32,7 @@ func NewUserHandler(
 	verifyEmailService *services.VerifyEmailService,
 	getUserService *services.GetUserService,
 	aiAnalysisService *services.AIAnalysisService,
+	examService *services.ExamService,
 	l *logger.Logger,
 ) *UserHandler {
 	return &UserHandler{
@@ -37,6 +42,7 @@ func NewUserHandler(
 		VerifyEmailService: verifyEmailService,
 		GetUserService:     getUserService,
 		AIAnalysisService:  aiAnalysisService,
+		ExamService:        examService,
 		Logger:             l,
 	}
 }
@@ -574,4 +580,167 @@ func (h *UserHandler) AIAnalyze(c *gin.Context) {
 		UserID:        id,
 	})
 	c.JSON(http.StatusOK, resp)
+}
+
+// @Summary      Upload de Exame
+// @Description  Faz o upload de um arquivo de exame e salva os metadados no banco
+// @Tags         exams
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file         formData file   true  "Arquivo do exame"
+// @Param        date         formData string true  "Data do exame (YYYY-MM-DD ou formato RFC3339)"
+// @Param        exam_type    formData string true  "Tipo de exame"
+// @Param        institution  formData string false "Instituição"
+// @Param        exam_result  formData string false "Resultado do exame"
+// @Success      201          {object} map[string]interface{}
+// @Failure      400          {object} map[string]string
+// @Failure      401          {object} map[string]string
+// @Failure      500          {object} map[string]string
+// @Router       /api/exams [post]
+func (h *UserHandler) UploadExam(c *gin.Context) {
+	patientID := c.GetString("userID")
+	if patientID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	// 1. Obtém o arquivo da requisição multipart
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "campo 'file' ausente ou inválido: " + err.Error()})
+		return
+	}
+
+	// 2. Obtém os outros parâmetros
+	examType := c.PostForm("exam_type")
+	if examType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "campo 'exam_type' obrigatório"})
+		return
+	}
+
+	dateStr := c.PostForm("date")
+	if dateStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "campo 'date' obrigatório"})
+		return
+	}
+
+	// Tenta parsear a data
+	var examDate time.Time
+	examDate, err = time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		// Se falhar, tenta parsear como RFC3339
+		examDate, err = time.Parse(time.RFC3339, dateStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "formato de data inválido. Use YYYY-MM-DD ou RFC3339"})
+			return
+		}
+	}
+
+	var institution *string
+	if inst := c.PostForm("institution"); inst != "" {
+		institution = &inst
+	}
+
+	var examResult *string
+	if res := c.PostForm("exam_result"); res != "" {
+		examResult = &res
+	}
+
+	// 3. Abre o arquivo
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao abrir arquivo: " + err.Error()})
+		return
+	}
+	defer file.Close()
+
+	// 4. Executa o upload via serviço
+	exam, err := h.ExamService.UploadExam(
+		c.Request.Context(),
+		patientID,
+		file,
+		fileHeader.Filename,
+		fileHeader.Size,
+		fileHeader.Header.Get("Content-Type"),
+		examDate,
+		examType,
+		institution,
+		examResult,
+	)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "upload_exam",
+			Description:   "erro ao fazer upload de exame para paciente " + patientID + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+			UserID:        patientID,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "users",
+		ActionType:    "upload_exam",
+		Description:   "exame " + exam.Id + " carregado com sucesso para paciente " + patientID,
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+		UserID:        patientID,
+	})
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Exame adicionado com sucesso!",
+		"exam":    exam,
+	})
+}
+
+// @Summary      Download de Arquivo de Exame
+// @Description  Obtém o stream do arquivo de exame armazenado no MinIO
+// @Tags         exams
+// @Param        id           path     string true "ID do Exame"
+// @Param        filename     path     string true "Nome do Arquivo"
+// @Param        token        query    string false "JWT Token para autorização (opcional se enviado via Header)"
+// @Success      200          {file}   binary
+// @Failure      401          {object} map[string]string
+// @Failure      403          {object} map[string]string
+// @Failure      444          {object} map[string]string
+// @Router       /api/exams/file/{id}/{filename} [get]
+func (h *UserHandler) GetExamFile(c *gin.Context) {
+	patientID := c.GetString("userID")
+	if patientID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	examID := c.Param("id")
+	filename := c.Param("filename")
+
+	if examID == "" || filename == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parâmetros 'id' e 'filename' são obrigatórios"})
+		return
+	}
+
+	fileStream, contentType, size, err := h.ExamService.GetExamFile(c.Request.Context(), patientID, examID, filename)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "download_exam",
+			Description:   "erro de permissão ou arquivo não encontrado ao tentar baixar exame " + examID + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+			UserID:        patientID,
+		})
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+	defer fileStream.Close()
+
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Length", fmt.Sprintf("%d", size))
+
+	_, _ = io.Copy(c.Writer, fileStream)
 }

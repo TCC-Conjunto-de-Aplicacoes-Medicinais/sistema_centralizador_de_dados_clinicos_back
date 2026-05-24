@@ -79,6 +79,10 @@ jobs:
             MARIADB_USER=${{ secrets.MARIADB_USER }}
             MARIADB_PASSWORD=${{ secrets.MARIADB_PASSWORD }}
             MARIADB_DB=${{ secrets.MARIADB_DB }}
+            MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}
+            MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+            MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+            MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
             KEYCLOAK_URL=${{ secrets.KEYCLOAK_HOSTNAME }}
             KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}

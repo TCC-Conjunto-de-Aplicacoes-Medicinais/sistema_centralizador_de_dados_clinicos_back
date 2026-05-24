@@ -94,7 +94,9 @@ func main() {
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	getUserService := services.NewGetUserService(mariaDB)
 	aiAnalysisService := services.NewAIAnalysisService(mariaDB, os.Getenv("GEMINI_API_KEY"), appLogger)
-	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, aiAnalysisService, appLogger)
+	minioClient := config.MinIOConnect()
+	examService := services.NewExamService(mariaDB, minioClient, baseURL)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, aiAnalysisService, examService, appLogger)
 
 	router := gin.Default()
 
@@ -129,8 +131,16 @@ func main() {
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
-		authGroup.POST("/users/exams/share", userHandler.ShareExam)
+		authGroup.POST("/exams/share", userHandler.ShareExam)
+		authGroup.POST("/exams", userHandler.UploadExam)
 		authGroup.POST("/ai/analyze", userHandler.AIAnalyze)
+	}
+
+	// --- Rotas com Autenticação Apenas (Downloads de Arquivo) ---
+	fileGroup := router.Group("/api")
+	fileGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger))
+	{
+		fileGroup.GET("/exams/file/:id/:filename", userHandler.GetExamFile)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

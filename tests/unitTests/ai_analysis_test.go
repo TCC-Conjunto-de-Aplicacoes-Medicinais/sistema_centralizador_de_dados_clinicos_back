@@ -271,7 +271,7 @@ func TestAIAnalysisService_Analyze_NetworkError(t *testing.T) {
 
 func TestAIAnalyze_Handler_ServiceNil(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -291,7 +291,7 @@ func TestAIAnalyze_Handler_ServiceNil(t *testing.T) {
 func TestAIAnalyze_Handler_Unauthorized(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
 	service := services.NewAIAnalysisService(nil, "mock-api-key", appLogger)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -312,7 +312,7 @@ func TestAIAnalyze_Handler_Unauthorized(t *testing.T) {
 func TestAIAnalyze_Handler_BadRequest(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
 	service := services.NewAIAnalysisService(nil, "mock-api-key", appLogger)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -364,7 +364,7 @@ func TestAIAnalyze_Handler_Success(t *testing.T) {
 		},
 	}
 
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -398,7 +398,7 @@ func TestAIAnalyze_Handler_ServiceError(t *testing.T) {
 		},
 	}
 
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
