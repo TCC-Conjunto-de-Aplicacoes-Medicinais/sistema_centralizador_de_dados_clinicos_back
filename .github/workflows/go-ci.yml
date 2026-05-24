@@ -93,6 +93,7 @@ jobs:
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
 
             # Baixa o docker-compose.yml e scripts atualizados do repositório
