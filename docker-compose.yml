@@ -93,6 +93,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
+      MINIO_USE_SSL: ${MINIO_USE_SSL}
     ports:
       - "8002:8002"
     depends_on:

@@ -83,6 +83,7 @@ jobs:
             MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
             MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
             MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
+            MINIO_USE_SSL=${{ secrets.MINIO_USE_SSL }}
             KEYCLOAK_URL=${{ secrets.KEYCLOAK_HOSTNAME }}
             KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}

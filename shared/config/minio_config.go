@@ -35,7 +35,7 @@ func MinIOConnect() *MinIOClient {
 	// Inicializa o cliente MinIO
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: false,
+		Secure: true,
 	})
 	if err != nil {
 		log.Fatalf("❌ Erro ao conectar no MinIO: %v", err)
