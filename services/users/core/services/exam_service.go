@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"time"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/config"
@@ -95,12 +96,43 @@ func (s *ExamService) GetExamFile(
 		return nil, "", 0, fmt.Errorf("acesso negado ao arquivo do exame: usuário não autorizado")
 	}
 
-	// Tenta primeiro o novo caminho estruturado: patient_id/exam_type/exam_id_filename
-	objectName := fmt.Sprintf("%s/%s/%s_%s", exam.PatientId, exam.ExamType, exam.Id, filename)
-	_, err := s.MinIO.Client.StatObject(ctx, s.MinIO.BucketName, objectName, minio.StatObjectOptions{})
-	if err != nil {
-		// Se falhar (ex: NoSuchKey), tenta o caminho antigo de fallback: patient_id/exam_id_filename
-		objectName = fmt.Sprintf("%s/%s_%s", exam.PatientId, exam.Id, filename)
+	// Tenta encontrar o arquivo no MinIO buscando por diferentes variações do nome do arquivo
+	// (original, unescaped e escaped) para suportar variações de URL-encoding.
+	possibleFilenames := []string{filename}
+	if decoded, err := url.PathUnescape(filename); err == nil && decoded != filename {
+		possibleFilenames = append(possibleFilenames, decoded)
+	}
+	if encoded := url.PathEscape(filename); encoded != filename {
+		possibleFilenames = append(possibleFilenames, encoded)
+	}
+	if queryEncoded := url.QueryEscape(filename); queryEncoded != filename {
+		possibleFilenames = append(possibleFilenames, queryEncoded)
+	}
+
+	var objectName string
+	found := false
+
+	for _, fn := range possibleFilenames {
+		// 1. Novo caminho estruturado: patient_id/exam_type/exam_id_filename
+		path1 := fmt.Sprintf("%s/%s/%s_%s", exam.PatientId, exam.ExamType, exam.Id, fn)
+		if _, err := s.MinIO.Client.StatObject(ctx, s.MinIO.BucketName, path1, minio.StatObjectOptions{}); err == nil {
+			objectName = path1
+			found = true
+			break
+		}
+
+		// 2. Caminho antigo de fallback: patient_id/exam_id_filename
+		path2 := fmt.Sprintf("%s/%s_%s", exam.PatientId, exam.Id, fn)
+		if _, err := s.MinIO.Client.StatObject(ctx, s.MinIO.BucketName, path2, minio.StatObjectOptions{}); err == nil {
+			objectName = path2
+			found = true
+			break
+		}
+	}
+
+	// Caso não encontre por nenhuma variação (para que GetObject/Stat retorne o erro correto), define a padrão
+	if !found {
+		objectName = fmt.Sprintf("%s/%s/%s_%s", exam.PatientId, exam.ExamType, exam.Id, filename)
 	}
 
 	object, err := s.MinIO.Client.GetObject(ctx, s.MinIO.BucketName, objectName, minio.GetObjectOptions{})
