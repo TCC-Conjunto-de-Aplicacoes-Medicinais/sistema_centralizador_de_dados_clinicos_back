@@ -267,3 +267,100 @@ func TestGetExams_Handler_Success(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "exam-1")
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestExamService_DeleteExam_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	service := services.NewExamService(gormDB, nil, "http://localhost:8002")
+
+	// First query finds the exam
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("exam-uuid-123", true, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id"}).AddRow("exam-uuid-123", "patient-uuid-123"))
+
+	// Second query/exec updates the deleted_at field (soft delete)
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `exam` SET `deleted_at`=\\? WHERE `exam`.`id` = \\?").
+		WithArgs(sqlmock.AnyArg(), "exam-uuid-123").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	err = service.DeleteExam(context.Background(), "patient-uuid-123", "exam-uuid-123")
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExamService_DeleteExam_AccessDenied(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	service := services.NewExamService(gormDB, nil, "http://localhost:8002")
+
+	// First query finds the exam but owned by someone else
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("exam-uuid-123", true, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id"}).AddRow("exam-uuid-123", "other-patient-uuid"))
+
+	err = service.DeleteExam(context.Background(), "patient-uuid-123", "exam-uuid-123")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "acesso negado")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestDeleteExam_Handler_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	examService := services.NewExamService(gormDB, nil, "http://localhost:8002")
+	appLogger := logger.NewLogger(nil)
+	examHandler := userHttp.NewExamHandler(examService, appLogger)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	router.Use(func(c *gin.Context) {
+		c.Set("userID", "patient-uuid-123")
+		c.Next()
+	})
+	router.DELETE("/api/exams/:id", examHandler.DeleteExam)
+
+	// Mock DB query & delete
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("exam-uuid-123", true, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id"}).AddRow("exam-uuid-123", "patient-uuid-123"))
+
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `exam` SET `deleted_at`=\\? WHERE `exam`.`id` = \\?").
+		WithArgs(sqlmock.AnyArg(), "exam-uuid-123").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("DELETE", "/api/exams/exam-uuid-123", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Exame deletado com sucesso!")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}

@@ -48,6 +48,7 @@ func setupUnitRouter() *gin.Engine {
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
 	router.POST("/api/exams/share", examHandler.ShareExam)
+	router.DELETE("/api/exams/:id", examHandler.DeleteExam)
 	
 	return router
 }

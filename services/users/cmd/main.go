@@ -137,6 +137,7 @@ func main() {
 		authGroup.POST("/exams", examHandler.UploadExam)
 		authGroup.GET("/exams", examHandler.GetExams)
 		authGroup.GET("/exams/:id", examHandler.GetExamByID)
+		authGroup.DELETE("/exams/:id", examHandler.DeleteExam)
 		authGroup.POST("/ai/analyze", aiHandler.AIAnalyze)
 		authGroup.GET("/exams/file/:id/:filename", examHandler.GetExamFile)
 	}

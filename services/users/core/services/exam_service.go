@@ -178,3 +178,25 @@ func (s *ExamService) GetExamByID(ctx context.Context, patientID string, examID 
 
 	return &exam, nil
 }
+
+// DeleteExam realiza o soft delete de um exame, se pertencer ao paciente informado.
+func (s *ExamService) DeleteExam(ctx context.Context, patientID string, examID string) error {
+	var exam database.Exam
+	err := s.DB.WithContext(ctx).
+		Where("id = ? AND flag_active = ?", examID, true).
+		First(&exam).Error
+	if err != nil {
+		return fmt.Errorf("exame não encontrado: %w", err)
+	}
+
+	if exam.PatientId != patientID {
+		return fmt.Errorf("acesso negado ao exame: usuário não autorizado")
+	}
+
+	// Deleta o registro (soft delete automático por causa do gorm.Model)
+	if err := s.DB.WithContext(ctx).Delete(&exam).Error; err != nil {
+		return fmt.Errorf("falha ao deletar exame: %w", err)
+	}
+
+	return nil
+}

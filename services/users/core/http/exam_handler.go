@@ -325,3 +325,60 @@ func (h *ExamHandler) GetExamByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, exam)
 }
+
+// DeleteExam
+// @Summary      Deletar Exame
+// @Description  Exclui (soft delete) um exame pertencente ao paciente autenticado
+// @Tags         exams
+// @Param        id            path     string true  "ID do Exame"
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
+// @Success      200           {object} map[string]string
+// @Failure      400           {object} map[string]string
+// @Failure      401           {object} map[string]string
+// @Failure      403           {object} map[string]string
+// @Failure      404           {object} map[string]string
+// @Failure      500           {object} map[string]string
+// @Router       /api/exams/{id} [delete]
+func (h *ExamHandler) DeleteExam(c *gin.Context) {
+	patientID := c.GetString("userID")
+	if patientID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	examID := c.Param("id")
+	if examID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parâmetro 'id' é obrigatório"})
+		return
+	}
+
+	err := h.ExamService.DeleteExam(c.Request.Context(), patientID, examID)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "exams",
+			ActionType:    "delete_exam",
+			Description:   "erro ao deletar exame " + examID + " para paciente " + patientID + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+			UserID:        patientID,
+		})
+		if strings.Contains(err.Error(), "acesso negado") {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	h.Logger.Log(logger.LogEntry{
+		OriginService: "exams",
+		ActionType:    "delete_exam",
+		Description:   "exame " + examID + " deletado com sucesso para paciente " + patientID,
+		OriginIP:      c.ClientIP(),
+		ResultStatus:  "success",
+		UserID:        patientID,
+	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Exame deletado com sucesso!"})
+}
