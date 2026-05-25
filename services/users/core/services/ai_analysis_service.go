@@ -1,17 +1,16 @@
 package services
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
+	"google.golang.org/genai"
 	"gorm.io/gorm"
 )
 
@@ -35,8 +34,6 @@ Regras:
 7. Nunca afirme diagnósticos com certeza absoluta — use termos como "pode indicar", "sugere", "é possível que".
 8. Responda sempre em português do Brasil.
 9. NÃO inclua disclaimers ou avisos na sua resposta — isso será adicionado automaticamente pelo sistema.`
-
-	geminiAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 )
 
 // AIAnalysisService é o serviço responsável por processar análises médicas via IA.
@@ -60,42 +57,8 @@ func NewAIAnalysisService(db *gorm.DB, geminiAPIKey string, l *logger.Logger) *A
 }
 
 // -------------------------------------------------------------------
-// Estruturas para a API Gemini (Request/Response)
-// -------------------------------------------------------------------
-
-type geminiRequest struct {
-	SystemInstruction *geminiContent  `json:"systemInstruction,omitempty"`
-	Contents          []geminiContent `json:"contents"`
-}
-
-type geminiContent struct {
-	Parts []geminiPart `json:"parts"`
-}
-
-type geminiPart struct {
-	Text string `json:"text"`
-}
-
-type geminiResponse struct {
-	Candidates []struct {
-		Content struct {
-			Parts []struct {
-				Text string `json:"text"`
-			} `json:"parts"`
-		} `json:"content"`
-	} `json:"candidates"`
-	Error *struct {
-		Message string `json:"message"`
-		Code    int    `json:"code"`
-	} `json:"error,omitempty"`
-}
-
-// -------------------------------------------------------------------
-// Método principal de análise
-// -------------------------------------------------------------------
-
 // Analyze processa a consulta do paciente e retorna a análise da IA.
-func (s *AIAnalysisService) Analyze(userID string, req models.AIAnalysisRequest) (*models.AIAnalysisResponse, error) {
+func (s *AIAnalysisService) Analyze(ctx context.Context, userID string, req models.AIAnalysisRequest) (*models.AIAnalysisResponse, error) {
 	if s.GeminiAPIKey == "" {
 		s.log(logger.LogEntry{
 			OriginService: "ai_agent",
@@ -134,8 +97,8 @@ func (s *AIAnalysisService) Analyze(userID string, req models.AIAnalysisRequest)
 	// Por enquanto, usamos apenas o texto enviado pelo paciente
 	userQuery := req.Query
 
-	// Chama a API Gemini
-	analysisText, err := s.callGeminiAPI(userID, userQuery)
+	// Chama a API Gemini usando o SDK
+	analysisText, err := s.callGeminiAPI(ctx, userID, userQuery)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao consultar IA: %w", err)
 	}
@@ -166,115 +129,58 @@ func (s *AIAnalysisService) Analyze(userID string, req models.AIAnalysisRequest)
 	}, nil
 }
 
-// callGeminiAPI envia o prompt para a API Gemini e retorna o texto gerado.
-func (s *AIAnalysisService) callGeminiAPI(userID string, userQuery string) (string, error) {
-	reqBody := geminiRequest{
-		SystemInstruction: &geminiContent{
-			Parts: []geminiPart{{Text: systemPrompt}},
-		},
-		Contents: []geminiContent{
-			{
-				Parts: []geminiPart{{Text: userQuery}},
-			},
-		},
-	}
-
-	jsonBody, err := json.Marshal(reqBody)
+// callGeminiAPI envia o prompt para a API Gemini via SDK oficial e retorna o texto gerado.
+func (s *AIAnalysisService) callGeminiAPI(ctx context.Context, userID string, userQuery string) (string, error) {
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey:     s.GeminiAPIKey,
+		HTTPClient: s.HTTPClient,
+	})
 	if err != nil {
 		s.log(logger.LogEntry{
 			OriginService: "ai_agent",
 			ActionType:    "ai_gemini_call",
-			Description:   "erro ao serializar request para API Gemini: " + err.Error(),
+			Description:   "erro ao inicializar cliente GenAI: " + err.Error(),
 			ResultStatus:  "error",
 			UserID:        userID,
 		})
-		return "", fmt.Errorf("erro ao serializar request: %w", err)
+		return "", fmt.Errorf("erro ao inicializar cliente GenAI: %w", err)
 	}
-
-	url := fmt.Sprintf("%s?key=%s", geminiAPIURL, s.GeminiAPIKey)
-
-	httpReq, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(jsonBody))
-	if err != nil {
-		s.log(logger.LogEntry{
-			OriginService: "ai_agent",
-			ActionType:    "ai_gemini_call",
-			Description:   "erro ao criar request HTTP para API Gemini: " + err.Error(),
-			ResultStatus:  "error",
-			UserID:        userID,
-		})
-		return "", fmt.Errorf("erro ao criar request HTTP: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
 
 	s.log(logger.LogEntry{
 		OriginService: "ai_agent",
 		ActionType:    "ai_gemini_call",
-		Description:   fmt.Sprintf("enviando requisição para API Gemini (usuário %s)", userID),
+		Description:   fmt.Sprintf("enviando requisição para API Gemini via SDK (usuário %s)", userID),
 		ResultStatus:  "success",
 		UserID:        userID,
 	})
 
-	resp, err := s.HTTPClient.Do(httpReq)
+	config := &genai.GenerateContentConfig{
+		SystemInstruction: &genai.Content{
+			Parts: []*genai.Part{
+				{Text: systemPrompt},
+			},
+		},
+	}
+
+	resp, err := client.Models.GenerateContent(
+		ctx,
+		"gemini-2.5-flash",
+		genai.Text(userQuery),
+		config,
+	)
 	if err != nil {
 		s.log(logger.LogEntry{
 			OriginService: "ai_agent",
 			ActionType:    "ai_gemini_call",
-			Description:   "falha na conexão com API Gemini: " + err.Error(),
+			Description:   "falha na chamada à API Gemini via SDK: " + err.Error(),
 			ResultStatus:  "error",
 			UserID:        userID,
 		})
-		return "", fmt.Errorf("erro na chamada à API Gemini: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		s.log(logger.LogEntry{
-			OriginService: "ai_agent",
-			ActionType:    "ai_gemini_call",
-			Description:   "erro ao ler corpo da resposta da API Gemini: " + err.Error(),
-			ResultStatus:  "error",
-			UserID:        userID,
-		})
-		return "", fmt.Errorf("erro ao ler resposta da API: %w", err)
+		return "", fmt.Errorf("erro na chamada ao modelo Gemini: %w", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		s.log(logger.LogEntry{
-			OriginService: "ai_agent",
-			ActionType:    "ai_gemini_call",
-			Description:   fmt.Sprintf("API Gemini retornou status HTTP %d para usuário %s", resp.StatusCode, userID),
-			ResultStatus:  "error",
-			UserID:        userID,
-		})
-		return "", fmt.Errorf("API Gemini retornou status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var geminiResp geminiResponse
-	if err := json.Unmarshal(body, &geminiResp); err != nil {
-		s.log(logger.LogEntry{
-			OriginService: "ai_agent",
-			ActionType:    "ai_gemini_call",
-			Description:   "erro ao decodificar resposta JSON da API Gemini: " + err.Error(),
-			ResultStatus:  "error",
-			UserID:        userID,
-		})
-		return "", fmt.Errorf("erro ao decodificar resposta da API: %w", err)
-	}
-
-	if geminiResp.Error != nil {
-		s.log(logger.LogEntry{
-			OriginService: "ai_agent",
-			ActionType:    "ai_gemini_call",
-			Description:   "erro retornado pela API Gemini: " + geminiResp.Error.Message,
-			ResultStatus:  "error",
-			UserID:        userID,
-		})
-		return "", fmt.Errorf("erro da API Gemini: %s", geminiResp.Error.Message)
-	}
-
-	if len(geminiResp.Candidates) == 0 ||
-		len(geminiResp.Candidates[0].Content.Parts) == 0 {
+	analysisText := resp.Text()
+	if analysisText == "" {
 		s.log(logger.LogEntry{
 			OriginService: "ai_agent",
 			ActionType:    "ai_gemini_call",
@@ -288,12 +194,12 @@ func (s *AIAnalysisService) callGeminiAPI(userID string, userQuery string) (stri
 	s.log(logger.LogEntry{
 		OriginService: "ai_agent",
 		ActionType:    "ai_gemini_call",
-		Description:   fmt.Sprintf("resposta recebida da API Gemini com sucesso para usuário %s", userID),
+		Description:   fmt.Sprintf("resposta recebida do SDK Gemini com sucesso para usuário %s", userID),
 		ResultStatus:  "success",
 		UserID:        userID,
 	})
 
-	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
+	return analysisText, nil
 }
 
 // log é um helper que registra entradas no Cassandra de forma segura (nil-safe).

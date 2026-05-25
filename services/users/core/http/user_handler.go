@@ -557,7 +557,7 @@ func (h *UserHandler) AIAnalyze(c *gin.Context) {
 		UserID:        id,
 	})
 
-	resp, err := h.AIAnalysisService.Analyze(id, req)
+	resp, err := h.AIAnalysisService.Analyze(c.Request.Context(), id, req)
 	if err != nil {
 		h.Logger.Log(logger.LogEntry{
 			OriginService: "users",

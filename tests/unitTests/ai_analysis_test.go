@@ -1,6 +1,7 @@
 package unitTests
 
 import (
+	"context"
 	"bytes"
 	"errors"
 	"io"
@@ -45,7 +46,7 @@ func TestAIAnalysisService_Analyze_NoApiKey(t *testing.T) {
 	service := services.NewAIAnalysisService(nil, "", appLogger)
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -76,7 +77,7 @@ func TestAIAnalysisService_Analyze_Success(t *testing.T) {
 			roundTripFunc: func(req *http.Request) (*http.Response, error) {
 				assert.Equal(t, "POST", req.Method)
 				assert.Contains(t, req.URL.String(), "gemini-2.5-flash")
-				assert.Equal(t, "mock-api-key", req.URL.Query().Get("key"))
+				assert.Equal(t, "mock-api-key", req.Header.Get("x-goog-api-key"))
 
 				bodyBytes, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
@@ -92,7 +93,7 @@ func TestAIAnalysisService_Analyze_Success(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -131,7 +132,7 @@ func TestAIAnalysisService_Analyze_ShortResponseWarning(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, res)
@@ -155,11 +156,11 @@ func TestAIAnalysisService_Analyze_HttpError(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
-	assert.Contains(t, err.Error(), "API Gemini retornou status 500")
+	assert.Contains(t, err.Error(), "Error 500")
 }
 
 func TestAIAnalysisService_Analyze_ApiErrorPayload(t *testing.T) {
@@ -177,7 +178,7 @@ func TestAIAnalysisService_Analyze_ApiErrorPayload(t *testing.T) {
 		Transport: &mockRoundTripper{
 			roundTripFunc: func(req *http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: http.StatusOK,
+					StatusCode: http.StatusBadRequest,
 					Body:       io.NopCloser(strings.NewReader(mockRespJSON)),
 					Header:     make(http.Header),
 				}, nil
@@ -186,7 +187,7 @@ func TestAIAnalysisService_Analyze_ApiErrorPayload(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -214,7 +215,7 @@ func TestAIAnalysisService_Analyze_EmptyResponseCandidates(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
@@ -238,11 +239,11 @@ func TestAIAnalysisService_Analyze_InvalidJson(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
-	assert.Contains(t, err.Error(), "erro ao decodificar resposta da API")
+	assert.Contains(t, err.Error(), "unmarshalling response")
 }
 
 func TestAIAnalysisService_Analyze_NetworkError(t *testing.T) {
@@ -258,7 +259,7 @@ func TestAIAnalysisService_Analyze_NetworkError(t *testing.T) {
 	}
 
 	req := models.AIAnalysisRequest{Query: "test query"}
-	res, err := service.Analyze("user-1", req)
+	res, err := service.Analyze(context.Background(), "user-1", req)
 
 	assert.Error(t, err)
 	assert.Nil(t, res)
