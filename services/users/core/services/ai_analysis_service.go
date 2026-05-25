@@ -33,7 +33,8 @@ Regras:
 6. Nunca prescreva medicamentos.
 7. Nunca afirme diagnósticos com certeza absoluta — use termos como "pode indicar", "sugere", "é possível que".
 8. Responda sempre em português do Brasil.
-9. NÃO inclua disclaimers ou avisos na sua resposta — isso será adicionado automaticamente pelo sistema.`
+9. NÃO inclua disclaimers ou avisos na sua resposta — isso será adicionado automaticamente pelo sistema.
+10. Seja o mais breve e direto possível em sua resposta (evitando textos longos e cansativos), mas certifique-se de que a explicação seja completa, clara e fácil de entender para pessoas leigas.`
 )
 
 // AIAnalysisService é o serviço responsável por processar análises médicas via IA.
