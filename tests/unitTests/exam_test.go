@@ -154,7 +154,7 @@ func TestGetExamFile_Handler_Forbidden(t *testing.T) {
 
 	examService := services.NewExamService(gormDB, minioClient, "http://localhost:8002")
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, examService, appLogger)
+	examHandler := userHttp.NewExamHandler(examService, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -162,7 +162,7 @@ func TestGetExamFile_Handler_Forbidden(t *testing.T) {
 		c.Set("userID", "patient-uuid-123") // Logged in user
 		c.Next()
 	})
-	router.GET("/api/exams/file/:id/:filename", userHandler.GetExamFile)
+	router.GET("/api/exams/file/:id/:filename", examHandler.GetExamFile)
 
 	// Mock DB query retornando dono diferente
 	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE id = \\?").
@@ -244,7 +244,7 @@ func TestGetExams_Handler_Success(t *testing.T) {
 
 	examService := services.NewExamService(gormDB, nil, "http://localhost:8002")
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, examService, appLogger)
+	examHandler := userHttp.NewExamHandler(examService, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -252,7 +252,7 @@ func TestGetExams_Handler_Success(t *testing.T) {
 		c.Set("userID", "patient-uuid-123")
 		c.Next()
 	})
-	router.GET("/api/exams", userHandler.GetExams)
+	router.GET("/api/exams", examHandler.GetExams)
 
 	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(patient_id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
 		WithArgs("patient-uuid-123", true).

@@ -32,9 +32,8 @@ func setupUnitRouter() *gin.Engine {
 		&services.VerifyEmailService{},
 		nil,
 		nil,
-		nil,
-		nil,
 	)
+	examHandler := userHttp.NewExamHandler(nil, nil)
 
 	// Mock AuthMiddleware for unit tests
 	router.Use(func(c *gin.Context) {
@@ -48,7 +47,7 @@ func setupUnitRouter() *gin.Engine {
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/users/exams/share", examHandler.ShareExam)
 	
 	return router
 }
@@ -131,7 +130,7 @@ func TestShareExamHandler_BindJSON_Error(t *testing.T) {
 func TestServicesNil(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil)
 	
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/login", userHandler.Login)
@@ -139,7 +138,6 @@ func TestServicesNil(t *testing.T) {
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
 	router.GET("/api/users/profile", userHandler.GetUserProfile)
 
 	tests := []struct {
@@ -175,7 +173,7 @@ func TestGetUserProfile_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	getUserService := services.NewGetUserService(gormDB)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -221,7 +219,7 @@ func TestGetUserProfile_Error(t *testing.T) {
 	assert.NoError(t, err)
 
 	getUserService := services.NewGetUserService(gormDB)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -246,7 +244,7 @@ func TestGetUserProfile_Error(t *testing.T) {
 
 func TestGetUserProfile_Unauthorized(t *testing.T) {
 	getUserService := &services.GetUserService{}
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil, nil, nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, getUserService, nil)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -261,7 +259,7 @@ func TestGetUserProfile_Unauthorized(t *testing.T) {
 
 func TestShareExam_Success(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, nil, appLogger)
+	examHandler := userHttp.NewExamHandler(nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -269,7 +267,7 @@ func TestShareExam_Success(t *testing.T) {
 		c.Set("userID", "f5c09322-2624-4f0e-b816-7fb4b2b2b2b2")
 		c.Next()
 	})
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/users/exams/share", examHandler.ShareExam)
 
 	payload := []byte(`{"exam_id": "exam-123", "doctor_name": "Dr. House"}`)
 	w := httptest.NewRecorder()
@@ -283,11 +281,11 @@ func TestShareExam_Success(t *testing.T) {
 }
 
 func TestShareExam_Unauthorized(t *testing.T) {
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, nil, nil)
+	examHandler := userHttp.NewExamHandler(nil, nil)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/users/exams/share", examHandler.ShareExam)
 
 	payload := []byte(`{"exam_id": "exam-123", "doctor_name": "Dr. House"}`)
 	w := httptest.NewRecorder()
@@ -343,7 +341,7 @@ func TestSendVerifyEmail_Handler_Success(t *testing.T) {
 	smtpService := services.NewSMTPEmailService(&sharedConfig.SMTPConfig{})
 	verifyService := services.NewVerifyEmailService(gormDB, nil, smtpService)
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, nil, nil, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -387,7 +385,7 @@ func TestSendVerifyEmail_Handler_Failure(t *testing.T) {
 
 	verifyService := services.NewVerifyEmailService(gormDB, nil, nil)
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, nil, nil, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -426,7 +424,7 @@ func TestVerifyCode_Handler_Success(t *testing.T) {
 
 	verifyService := services.NewVerifyEmailService(gormDB, kcAuth, nil)
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, nil, nil, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, verifyService, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -457,7 +455,7 @@ func TestVerifyCode_Handler_Success(t *testing.T) {
 
 func TestVerifyCode_Handler_Failure_InvalidPayload(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, &services.VerifyEmailService{}, nil, nil, nil, appLogger)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, &services.VerifyEmailService{}, nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()

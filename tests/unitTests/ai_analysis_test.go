@@ -272,11 +272,11 @@ func TestAIAnalysisService_Analyze_NetworkError(t *testing.T) {
 
 func TestAIAnalyze_Handler_ServiceNil(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, nil, appLogger)
+	aiHandler := userHttp.NewAIHandler(nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	router.POST("/api/users/ai/analyze", userHandler.AIAnalyze)
+	router.POST("/api/users/ai/analyze", aiHandler.AIAnalyze)
 
 	payload := []byte(`{"query": "exame"}`)
 	w := httptest.NewRecorder()
@@ -292,12 +292,12 @@ func TestAIAnalyze_Handler_ServiceNil(t *testing.T) {
 func TestAIAnalyze_Handler_Unauthorized(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
 	service := services.NewAIAnalysisService(nil, "mock-api-key", appLogger)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
+	aiHandler := userHttp.NewAIHandler(service, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 	// No userID set in context
-	router.POST("/api/users/ai/analyze", userHandler.AIAnalyze)
+	router.POST("/api/users/ai/analyze", aiHandler.AIAnalyze)
 
 	payload := []byte(`{"query": "exame"}`)
 	w := httptest.NewRecorder()
@@ -313,7 +313,7 @@ func TestAIAnalyze_Handler_Unauthorized(t *testing.T) {
 func TestAIAnalyze_Handler_BadRequest(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
 	service := services.NewAIAnalysisService(nil, "mock-api-key", appLogger)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
+	aiHandler := userHttp.NewAIHandler(service, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -321,7 +321,7 @@ func TestAIAnalyze_Handler_BadRequest(t *testing.T) {
 		c.Set("userID", "user-uuid-1234")
 		c.Next()
 	})
-	router.POST("/api/users/ai/analyze", userHandler.AIAnalyze)
+	router.POST("/api/users/ai/analyze", aiHandler.AIAnalyze)
 
 	// Missing query field
 	payload := []byte(`{}`)
@@ -365,7 +365,7 @@ func TestAIAnalyze_Handler_Success(t *testing.T) {
 		},
 	}
 
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
+	aiHandler := userHttp.NewAIHandler(service, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -373,7 +373,7 @@ func TestAIAnalyze_Handler_Success(t *testing.T) {
 		c.Set("userID", "user-uuid-1234")
 		c.Next()
 	})
-	router.POST("/api/users/ai/analyze", userHandler.AIAnalyze)
+	router.POST("/api/users/ai/analyze", aiHandler.AIAnalyze)
 
 	payload := []byte(`{"query": "Meu exame deu hemoglobina 12"}`)
 	w := httptest.NewRecorder()
@@ -399,7 +399,7 @@ func TestAIAnalyze_Handler_ServiceError(t *testing.T) {
 		},
 	}
 
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, service, nil, appLogger)
+	aiHandler := userHttp.NewAIHandler(service, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -407,7 +407,7 @@ func TestAIAnalyze_Handler_ServiceError(t *testing.T) {
 		c.Set("userID", "user-uuid-1234")
 		c.Next()
 	})
-	router.POST("/api/users/ai/analyze", userHandler.AIAnalyze)
+	router.POST("/api/users/ai/analyze", aiHandler.AIAnalyze)
 
 	payload := []byte(`{"query": "Meu exame deu hemoglobina 12"}`)
 	w := httptest.NewRecorder()

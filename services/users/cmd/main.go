@@ -96,7 +96,9 @@ func main() {
 	aiAnalysisService := services.NewAIAnalysisService(mariaDB, os.Getenv("GEMINI_API_KEY"), appLogger)
 	minioClient := config.MinIOConnect()
 	examService := services.NewExamService(mariaDB, minioClient, baseURL)
-	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, aiAnalysisService, examService, appLogger)
+	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
+	examHandler := userHttp.NewExamHandler(examService, appLogger)
+	aiHandler := userHttp.NewAIHandler(aiAnalysisService, appLogger)
 
 	router := gin.Default()
 
@@ -131,12 +133,12 @@ func main() {
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
-		authGroup.POST("/exams/share", userHandler.ShareExam)
-		authGroup.POST("/exams", userHandler.UploadExam)
-		authGroup.GET("/exams", userHandler.GetExams)
-		authGroup.GET("/exams/:id", userHandler.GetExamByID)
-		authGroup.POST("/ai/analyze", userHandler.AIAnalyze)
-		authGroup.GET("/exams/file/:id/:filename", userHandler.GetExamFile)
+		authGroup.POST("/exams/share", examHandler.ShareExam)
+		authGroup.POST("/exams", examHandler.UploadExam)
+		authGroup.GET("/exams", examHandler.GetExams)
+		authGroup.GET("/exams/:id", examHandler.GetExamByID)
+		authGroup.POST("/ai/analyze", aiHandler.AIAnalyze)
+		authGroup.GET("/exams/file/:id/:filename", examHandler.GetExamFile)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
