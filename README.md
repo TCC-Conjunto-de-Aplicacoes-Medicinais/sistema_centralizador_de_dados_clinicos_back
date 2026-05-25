@@ -99,7 +99,7 @@ Todas as rotas da API possuem o prefixo `/api`. As requisições que exigem **DP
 | `PUT` | `/api/users` | Auth + DPoP | Atualiza dados cadastrais do paciente (nome, telefone, endereço). |
 | `POST` | `/api/users/send-verify-email` | Auth + DPoP | Dispara um código de confirmação ao e-mail do usuário. |
 | `POST` | `/api/users/verify-email-code` | Auth + DPoP | Valida o código de confirmação enviado ao e-mail. |
-| `POST` | `/api/users/exams/share` | Auth + DPoP | Compartilha um exame de forma auditada no Cassandra. |
+| `POST` | `/api/exams/share` | Auth + DPoP | Compartilha um exame de forma auditada no Cassandra. |
 | `POST` | `/api/ai/analyze` | Auth + DPoP | Solicita uma análise inteligente de exames/sintomas ao Gemini. |
 | `GET` | `/swagger/*any` | Pública | Acesso à interface gráfica Swagger UI para testes rápidos. |
 

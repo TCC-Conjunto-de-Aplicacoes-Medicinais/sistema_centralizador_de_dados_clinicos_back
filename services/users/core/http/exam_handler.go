@@ -38,7 +38,7 @@ func NewExamHandler(examService *services.ExamService, l *logger.Logger) *ExamHa
 // @Failure      400           {object} map[string]string
 // @Failure      401           {object} map[string]string
 // @Failure      500           {object} map[string]string
-// @Router       /api/users/exams/share [post]
+// @Router       /api/exams/share [post]
 func (h *ExamHandler) ShareExam(c *gin.Context) {
 	id := c.GetString("userID")
 	if id == "" {
