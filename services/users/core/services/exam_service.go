@@ -42,8 +42,8 @@ func (s *ExamService) UploadExam(
 ) (*database.Exam, error) {
 	examID := gocql.TimeUUID().String()
 	
-	// Define o nome do objeto usando a estrutura: patient_id/exam_id_filename
-	objectName := fmt.Sprintf("%s/%s_%s", patientID, examID, filename)
+	// Define o nome do objeto usando a estrutura: patient_id/exam_type/exam_id_filename
+	objectName := fmt.Sprintf("%s/%s/%s_%s", patientID, examType, examID, filename)
 
 	// Faz o upload para o MinIO
 	_, err := s.MinIO.Client.PutObject(ctx, s.MinIO.BucketName, objectName, file, fileSize, minio.PutObjectOptions{
@@ -95,7 +95,14 @@ func (s *ExamService) GetExamFile(
 		return nil, "", 0, fmt.Errorf("acesso negado ao arquivo do exame: usuário não autorizado")
 	}
 
-	objectName := fmt.Sprintf("%s/%s_%s", exam.PatientId, exam.Id, filename)
+	// Tenta primeiro o novo caminho estruturado: patient_id/exam_type/exam_id_filename
+	objectName := fmt.Sprintf("%s/%s/%s_%s", exam.PatientId, exam.ExamType, exam.Id, filename)
+	_, err := s.MinIO.Client.StatObject(ctx, s.MinIO.BucketName, objectName, minio.StatObjectOptions{})
+	if err != nil {
+		// Se falhar (ex: NoSuchKey), tenta o caminho antigo de fallback: patient_id/exam_id_filename
+		objectName = fmt.Sprintf("%s/%s_%s", exam.PatientId, exam.Id, filename)
+	}
+
 	object, err := s.MinIO.Client.GetObject(ctx, s.MinIO.BucketName, objectName, minio.GetObjectOptions{})
 	if err != nil {
 		return nil, "", 0, fmt.Errorf("falha ao obter arquivo do MinIO: %w", err)
@@ -108,4 +115,34 @@ func (s *ExamService) GetExamFile(
 	}
 
 	return object, stat.ContentType, stat.Size, nil
+}
+
+// GetExams retorna todos os exames ativos de um paciente ordenados por data decrescente.
+func (s *ExamService) GetExams(ctx context.Context, patientID string) ([]database.Exam, error) {
+	var exams []database.Exam
+	err := s.DB.WithContext(ctx).
+		Where("patient_id = ? AND flag_active = ?", patientID, true).
+		Order("date desc").
+		Find(&exams).Error
+	if err != nil {
+		return nil, fmt.Errorf("falha ao buscar exames do paciente no banco: %w", err)
+	}
+	return exams, nil
+}
+
+// GetExamByID retorna os detalhes de um exame específico se pertencer ao paciente informado.
+func (s *ExamService) GetExamByID(ctx context.Context, patientID string, examID string) (*database.Exam, error) {
+	var exam database.Exam
+	err := s.DB.WithContext(ctx).
+		Where("id = ? AND flag_active = ?", examID, true).
+		First(&exam).Error
+	if err != nil {
+		return nil, fmt.Errorf("exame não encontrado: %w", err)
+	}
+
+	if exam.PatientId != patientID {
+		return nil, fmt.Errorf("acesso negado ao exame: usuário não autorizado")
+	}
+
+	return &exam, nil
 }

@@ -133,14 +133,10 @@ func main() {
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
 		authGroup.POST("/exams/share", userHandler.ShareExam)
 		authGroup.POST("/exams", userHandler.UploadExam)
+		authGroup.GET("/exams", userHandler.GetExams)
+		authGroup.GET("/exams/:id", userHandler.GetExamByID)
 		authGroup.POST("/ai/analyze", userHandler.AIAnalyze)
-	}
-
-	// --- Rotas com Autenticação Apenas (Downloads de Arquivo) ---
-	fileGroup := router.Group("/api")
-	fileGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger))
-	{
-		fileGroup.GET("/exams/file/:id/:filename", userHandler.GetExamFile)
+		authGroup.GET("/exams/file/:id/:filename", userHandler.GetExamFile)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

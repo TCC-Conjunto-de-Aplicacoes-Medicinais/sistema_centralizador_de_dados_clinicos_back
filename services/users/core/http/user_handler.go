@@ -696,15 +696,16 @@ func (h *UserHandler) UploadExam(c *gin.Context) {
 }
 
 // @Summary      Download de Arquivo de Exame
-// @Description  Obtém o stream do arquivo de exame armazenado no MinIO
+// @Summary      Obter Stream do Arquivo de Exame com DPoP
+// @Description  Obtém o stream do arquivo de exame armazenado no MinIO exigindo DPoP proof no header
 // @Tags         exams
-// @Param        id           path     string true "ID do Exame"
-// @Param        filename     path     string true "Nome do Arquivo"
-// @Param        token        query    string false "JWT Token para autorização (opcional se enviado via Header)"
-// @Success      200          {file}   binary
-// @Failure      401          {object} map[string]string
-// @Failure      403          {object} map[string]string
-// @Failure      444          {object} map[string]string
+// @Param        id            path     string true "ID do Exame"
+// @Param        filename      path     string true "Nome do Arquivo"
+// @Param        Authorization header   string true "Access Token (Bearer)"
+// @Param        DPoP          header   string true "DPoP Proof JWT (RFC 9449)"
+// @Success      200           {file}   binary
+// @Failure      401           {object} map[string]string
+// @Failure      403           {object} map[string]string
 // @Router       /api/exams/file/{id}/{filename} [get]
 func (h *UserHandler) GetExamFile(c *gin.Context) {
 	patientID := c.GetString("userID")
@@ -743,4 +744,85 @@ func (h *UserHandler) GetExamFile(c *gin.Context) {
 	c.Header("Content-Length", fmt.Sprintf("%d", size))
 
 	_, _ = io.Copy(c.Writer, fileStream)
+}
+
+// @Summary      Listar Exames do Paciente
+// @Description  Retorna todos os exames ativos do paciente logado
+// @Tags         exams
+// @Produce      json
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
+// @Success      200           {array}  database.Exam
+// @Failure      401           {object} map[string]string
+// @Failure      500           {object} map[string]string
+// @Router       /api/exams [get]
+func (h *UserHandler) GetExams(c *gin.Context) {
+	patientID := c.GetString("userID")
+	if patientID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	exams, err := h.ExamService.GetExams(c.Request.Context(), patientID)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "get_exams",
+			Description:   "erro ao buscar exames para paciente " + patientID + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+			UserID:        patientID,
+		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, exams)
+}
+
+// @Summary      Obter Detalhes do Exame
+// @Description  Retorna as informações de um exame específico do paciente logado
+// @Tags         exams
+// @Produce      json
+// @Param        id            path     string true  "ID do Exame"
+// @Param        Authorization header   string  true  "Access Token (Bearer)"
+// @Param        DPoP          header   string  true  "DPoP Proof JWT (RFC 9449)"
+// @Success      200           {object} database.Exam
+// @Failure      401           {object} map[string]string
+// @Failure      403           {object} map[string]string
+// @Failure      404           {object} map[string]string
+// @Failure      500           {object} map[string]string
+// @Router       /api/exams/{id} [get]
+func (h *UserHandler) GetExamByID(c *gin.Context) {
+	patientID := c.GetString("userID")
+	if patientID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuário não identificado"})
+		return
+	}
+
+	examID := c.Param("id")
+	if examID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "parâmetro 'id' é obrigatório"})
+		return
+	}
+
+	exam, err := h.ExamService.GetExamByID(c.Request.Context(), patientID, examID)
+	if err != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "get_exam_by_id",
+			Description:   "erro ao buscar exame " + examID + " para paciente " + patientID + ": " + err.Error(),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "error",
+			UserID:        patientID,
+		})
+		if strings.Contains(err.Error(), "acesso negado") {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, exam)
 }

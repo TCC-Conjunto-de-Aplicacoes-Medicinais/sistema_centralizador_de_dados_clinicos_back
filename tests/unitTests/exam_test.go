@@ -87,11 +87,10 @@ func TestExamService_GetExamFile_Success(t *testing.T) {
 
 	service := services.NewExamService(gormDB, minioClient, "http://localhost:8002")
 
-	// Mock DB query
 	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE id = \\?").
 		WithArgs("exam-uuid-123", sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "link_bucket"}).
-			AddRow("exam-uuid-123", "patient-uuid-123", "http://localhost:8002/api/exams/file/exam-uuid-123/test.pdf"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type", "link_bucket"}).
+			AddRow("exam-uuid-123", "patient-uuid-123", "blood-test", "http://localhost:8002/api/exams/file/exam-uuid-123/test.pdf"))
 
 	stream, contentType, size, err := service.GetExamFile(context.Background(), "patient-uuid-123", "exam-uuid-123", "test.pdf")
 	assert.NoError(t, err)
@@ -126,8 +125,8 @@ func TestExamService_GetExamFile_AccessDenied(t *testing.T) {
 	// Mock DB query com dono diferente
 	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE id = \\?").
 		WithArgs("exam-uuid-123", sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id"}).
-			AddRow("exam-uuid-123", "other-patient-uuid"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type"}).
+			AddRow("exam-uuid-123", "other-patient-uuid", "blood-test"))
 
 	stream, contentType, size, err := service.GetExamFile(context.Background(), "patient-uuid-123", "exam-uuid-123", "test.pdf")
 	assert.Error(t, err)
@@ -168,8 +167,8 @@ func TestGetExamFile_Handler_Forbidden(t *testing.T) {
 	// Mock DB query retornando dono diferente
 	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE id = \\?").
 		WithArgs("exam-uuid-123", sqlmock.AnyArg()).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id"}).
-			AddRow("exam-uuid-123", "different-patient-uuid"))
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type"}).
+			AddRow("exam-uuid-123", "different-patient-uuid", "blood-test"))
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/exams/file/exam-uuid-123/test.pdf", nil)
@@ -177,5 +176,94 @@ func TestGetExamFile_Handler_Forbidden(t *testing.T) {
 
 	assert.Equal(t, http.StatusForbidden, w.Code)
 	assert.Contains(t, w.Body.String(), "acesso negado")
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExamService_GetExams_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	service := services.NewExamService(gormDB, nil, "http://localhost:8002")
+
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(patient_id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("patient-uuid-123", true).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type"}).
+			AddRow("exam-1", "patient-uuid-123", "blood-test").
+			AddRow("exam-2", "patient-uuid-123", "urine-test"))
+
+	exams, err := service.GetExams(context.Background(), "patient-uuid-123")
+	assert.NoError(t, err)
+	assert.Len(t, exams, 2)
+	assert.Equal(t, "exam-1", exams[0].Id)
+	assert.Equal(t, "exam-2", exams[1].Id)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestExamService_GetExamByID_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	service := services.NewExamService(gormDB, nil, "http://localhost:8002")
+
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("exam-uuid-123", true, sqlmock.AnyArg()).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type"}).
+			AddRow("exam-uuid-123", "patient-uuid-123", "blood-test"))
+
+	exam, err := service.GetExamByID(context.Background(), "patient-uuid-123", "exam-uuid-123")
+	assert.NoError(t, err)
+	assert.NotNil(t, exam)
+	assert.Equal(t, "exam-uuid-123", exam.Id)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestGetExams_Handler_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	gormDB, err := gorm.Open(mysql.New(mysql.Config{
+		Conn:                      db,
+		SkipInitializeWithVersion: true,
+	}), &gorm.Config{})
+	assert.NoError(t, err)
+
+	examService := services.NewExamService(gormDB, nil, "http://localhost:8002")
+	appLogger := logger.NewLogger(nil)
+	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil, examService, appLogger)
+
+	gin.SetMode(gin.TestMode)
+	router := gin.Default()
+	router.Use(func(c *gin.Context) {
+		c.Set("userID", "patient-uuid-123")
+		c.Next()
+	})
+	router.GET("/api/exams", userHandler.GetExams)
+
+	mock.ExpectQuery("SELECT \\* FROM `exam` WHERE \\(patient_id = \\? AND flag_active = \\?\\) AND `exam`.`deleted_at` IS NULL").
+		WithArgs("patient-uuid-123", true).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "patient_id", "exam_type"}).
+			AddRow("exam-1", "patient-uuid-123", "blood-test"))
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/exams", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "exam-1")
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
