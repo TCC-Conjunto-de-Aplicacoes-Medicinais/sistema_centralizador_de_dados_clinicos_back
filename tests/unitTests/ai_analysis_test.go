@@ -75,7 +75,7 @@ func TestAIAnalysisService_Analyze_Success(t *testing.T) {
 		Transport: &mockRoundTripper{
 			roundTripFunc: func(req *http.Request) (*http.Response, error) {
 				assert.Equal(t, "POST", req.Method)
-				assert.Contains(t, req.URL.String(), "gemini-2.0-flash")
+				assert.Contains(t, req.URL.String(), "gemini-2.5-flash")
 				assert.Equal(t, "mock-api-key", req.URL.Query().Get("key"))
 
 				bodyBytes, err := io.ReadAll(req.Body)

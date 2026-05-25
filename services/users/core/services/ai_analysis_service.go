@@ -36,7 +36,7 @@ Regras:
 8. Responda sempre em português do Brasil.
 9. NÃO inclua disclaimers ou avisos na sua resposta — isso será adicionado automaticamente pelo sistema.`
 
-	geminiAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+	geminiAPIURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 )
 
 // AIAnalysisService é o serviço responsável por processar análises médicas via IA.
