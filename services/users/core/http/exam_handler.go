@@ -60,18 +60,15 @@ func (h *ExamHandler) ShareExam(c *gin.Context) {
 	}
 
 	// Gera o log simulando o compartilhamento no Cassandra
-	err := h.Logger.Log(logger.LogEntry{
+	if err := h.Logger.Log(logger.LogEntry{
 		OriginService: "exams",
 		ActionType:    "share_exam",
 		Description:   "exame " + req.ExamID + " compartilhado com o médico " + req.DoctorName,
 		OriginIP:      c.ClientIP(),
 		ResultStatus:  "success",
 		UserID:        id,
-	})
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "erro ao registrar log: " + err.Error()})
-		return
+	}); err != nil {
+		fmt.Printf("⚠️ Erro ao registrar log no Cassandra (share_exam): %v\n", err)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Exame compartilhado com sucesso!"})
