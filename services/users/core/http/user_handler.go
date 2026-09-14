@@ -1,14 +1,18 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/services"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
+	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/models"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserHandler struct {
@@ -18,6 +22,7 @@ type UserHandler struct {
 	VerifyEmailService *services.VerifyEmailService
 	GetUserService     *services.GetUserService
 	Logger             *logger.Logger
+	DB                 *gorm.DB
 }
 
 func NewUserHandler(
@@ -484,3 +489,67 @@ func (h *UserHandler) ShareExam(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Exame compartilhado com sucesso!"})
 }
+
+// GET /api/users/audit-trail - Lista acessos realizados aos dados do paciente
+func (h *UserHandler) GetPatientAuditTrail(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
+	if h.DB == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Banco de dados não configurado"})
+		return
+	}
+
+	var logs []database.AccessAuditLog
+	err := h.DB.Where("patient_id = ?", userID).
+		Order("created_at DESC").
+		Limit(50).
+		Find(&logs).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao buscar trilha de auditoria: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, logs)
+}
+
+// POST /api/users/qr-token - Gera código temporal OTP para leitura presencial na recepção
+func (h *UserHandler) GenerateQuickAccessToken(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuário não autenticado"})
+		return
+	}
+
+	if h.DB == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Banco de dados não configurado"})
+		return
+	}
+
+	// Gera código aleatório de 6 dígitos numéricos
+	code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+	expiresAt := time.Now().Add(5 * time.Minute)
+
+	token := database.PatientToken{
+		PatientID: userID,
+		TokenCode: code,
+		ExpiresAt: expiresAt,
+		Used:      false,
+	}
+
+	if err := h.DB.Create(&token).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao gerar código de acesso: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tokenCode": code,
+		"expiresIn": 300,
+		"expiresAt": expiresAt.Format(time.RFC3339),
+	})
+}
+

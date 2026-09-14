@@ -98,7 +98,10 @@ func main() {
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	getUserService := services.NewGetUserService(mariaDB)
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
+	userHandler.DB = mariaDB
 	clinicHandler := userHttp.NewClinicHandler(mariaDB, smtpService, appLogger)
+	examHandler := userHttp.NewExamHandler(mariaDB, appLogger)
+	consentHandler := userHttp.NewConsentHandler(mariaDB, appLogger)
 
 	router := gin.Default()
 
@@ -115,6 +118,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"Message": "OK"})
 	})
 	router.POST("/api/signup", userHandler.Signup)
+	router.GET("/api/exams/file/:id/:filename", examHandler.DownloadExamFile)
 
 	// --- Rotas de Clínicas ---
 	router.POST("/api/auth/login", clinicHandler.LoginClinic)
@@ -145,6 +149,21 @@ func main() {
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
 		authGroup.POST("/users/exams/share", userHandler.ShareExam)
+
+		// --- Rotas de Exames do Paciente ---
+		authGroup.GET("/exams", examHandler.ListPatientExams)
+		authGroup.GET("/exams/:id", examHandler.GetExamByID)
+		authGroup.POST("/exams", examHandler.UploadExam)
+		authGroup.DELETE("/exams/:id", examHandler.DeleteExam)
+
+		// --- Rotas de Consentimento LGPD (Paciente) ---
+		authGroup.GET("/users/consents", consentHandler.ListConsents)
+		authGroup.POST("/users/consents/approve", consentHandler.ApproveConsent)
+		authGroup.DELETE("/users/consents/:id", consentHandler.RevokeConsent)
+
+		// --- Trilha de Auditoria & QR Token do Paciente ---
+		authGroup.GET("/users/audit-trail", userHandler.GetPatientAuditTrail)
+		authGroup.POST("/users/qr-token", userHandler.GenerateQuickAccessToken)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
