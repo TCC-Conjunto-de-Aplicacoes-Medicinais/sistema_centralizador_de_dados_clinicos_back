@@ -79,6 +79,11 @@ jobs:
             MARIADB_USER=${{ secrets.MARIADB_USER }}
             MARIADB_PASSWORD=${{ secrets.MARIADB_PASSWORD }}
             MARIADB_DB=${{ secrets.MARIADB_DB }}
+            MINIO_BUCKET_NAME=${{ secrets.MINIO_BUCKET_NAME }}
+            MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+            MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+            MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}
+            MINIO_USE_SSL=${{ secrets.MINIO_USE_SSL }}
             KEYCLOAK_URL=${{ secrets.KEYCLOAK_HOSTNAME }}
             KEYCLOAK_CLIENT_ID=${{ secrets.KEYCLOAK_CLIENT_ID }}
             KEYCLOAK_CLIENT_SECRET=${{ secrets.KEYCLOAK_CLIENT_SECRET }}
@@ -93,6 +98,7 @@ jobs:
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
             SMTP_PASSWORD=${{ secrets.SMTP_PASSWORD }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
 
             # Baixa o docker-compose.yml e scripts atualizados do repositório

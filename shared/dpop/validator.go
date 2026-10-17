@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -104,6 +105,15 @@ func ParseAndValidate(proofJWT, expectedHTM, expectedHTU string) (string, error)
 	// Comparar htu sem query string nem fragmento
 	htu := strings.SplitN(claims.HTU, "?", 2)[0]
 	htu = strings.SplitN(htu, "#", 2)[0]
+
+	// Decodifica ambos para evitar problemas de URL encoding (%20 vs espaço, etc.)
+	if unescapedHTU, err := url.PathUnescape(htu); err == nil {
+		htu = unescapedHTU
+	}
+	if unescapedExpected, err := url.PathUnescape(expectedHTU); err == nil {
+		expectedHTU = unescapedExpected
+	}
+
 	if htu != expectedHTU {
 		return "", fmt.Errorf("dpop: htu %q inválido, esperado %q", claims.HTU, expectedHTU)
 	}

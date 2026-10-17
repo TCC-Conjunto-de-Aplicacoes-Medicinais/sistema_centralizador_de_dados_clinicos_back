@@ -243,13 +243,18 @@ func SeedDemoData(db *gorm.DB) error {
 
 		// Seed Exams
 		log.Println("🌱 Inserindo exames de teste...")
+		c4004 := "CLI-4004"
+		c3003 := "CLI-3003"
+		now := time.Now()
 		exams := []Exam{
 			{
 				Id:          "ex-1",
 				PatientId:   "pat-1",
-				ClinicId:    "CLI-4004",
+				ClinicId:    &c4004,
 				LinkBucket:  "laudo_hemograma_maria.pdf",
 				IdCassandra: "00000000-0000-0000-0000-000000000001",
+				Date:        now,
+				ExamType:    "Laboratorial",
 				FlagActive:  true,
 				Title:       "Hemograma Completo",
 				Provider:    "Laboratório Santa Cecília",
@@ -258,9 +263,11 @@ func SeedDemoData(db *gorm.DB) error {
 			{
 				Id:          "ex-2",
 				PatientId:   "pat-1",
-				ClinicId:    "CLI-3003",
+				ClinicId:    &c3003,
 				LinkBucket:  "ecg_maria.pdf",
 				IdCassandra: "00000000-0000-0000-0000-000000000002",
+				Date:        now,
+				ExamType:    "Cardiologia",
 				FlagActive:  true,
 				Title:       "Eletrocardiograma (ECG)",
 				Provider:    "CardioCentro Integrado",
@@ -269,9 +276,11 @@ func SeedDemoData(db *gorm.DB) error {
 			{
 				Id:          "ex-3",
 				PatientId:   "pat-2",
-				ClinicId:    "CLI-4004",
+				ClinicId:    &c4004,
 				LinkBucket:  "glicemia_joao.pdf",
 				IdCassandra: "00000000-0000-0000-0000-000000000003",
+				Date:        now,
+				ExamType:    "Laboratorial",
 				FlagActive:  true,
 				Title:       "Glicemia de Jejum",
 				Provider:    "Laboratório Santa Cecília",
@@ -280,9 +289,11 @@ func SeedDemoData(db *gorm.DB) error {
 			{
 				Id:          "ex-4",
 				PatientId:   "pat-4",
-				ClinicId:    "CLI-4004",
+				ClinicId:    &c4004,
 				LinkBucket:  "beta_hcg_ana.pdf",
 				IdCassandra: "00000000-0000-0000-0000-000000000004",
+				Date:        now,
+				ExamType:    "Laboratorial",
 				FlagActive:  true,
 				Title:       "Beta HCG Quantitativo",
 				Provider:    "Laboratório Santa Cecília",
@@ -291,9 +302,11 @@ func SeedDemoData(db *gorm.DB) error {
 			{
 				Id:          "ex-5",
 				PatientId:   "pat-5",
-				ClinicId:    "CLI-4004",
+				ClinicId:    &c4004,
 				LinkBucket:  "lipideo_marcos.pdf",
 				IdCassandra: "00000000-0000-0000-0000-000000000005",
+				Date:        now,
+				ExamType:    "Laboratorial",
 				FlagActive:  true,
 				Title:       "Perfil Lipídico",
 				Provider:    "Laboratório Santa Cecília",

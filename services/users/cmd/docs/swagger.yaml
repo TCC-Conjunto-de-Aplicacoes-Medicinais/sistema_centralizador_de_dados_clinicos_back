@@ -1,6 +1,285 @@
 basePath: /
 definitions:
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest:
+  database.Clinic:
+    properties:
+      bucket_obj:
+        type: string
+      cnpj:
+        type: string
+      created_at:
+        type: string
+      createdAt:
+        type: string
+      deleted_at:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      doctors:
+        items:
+          $ref: '#/definitions/database.Doctor'
+        type: array
+      email:
+        type: string
+      especialidade:
+        type: string
+      exams:
+        items:
+          $ref: '#/definitions/database.Exam'
+        type: array
+      id:
+        type: string
+      keycloak_id:
+        type: string
+      localizacao:
+        type: string
+      nome_clinica:
+        type: string
+      nome_responsavel:
+        type: string
+      telefone:
+        type: string
+      updated_at:
+        type: string
+      updatedAt:
+        type: string
+      verify:
+        type: boolean
+    type: object
+  database.Doctor:
+    properties:
+      clinics:
+        items:
+          $ref: '#/definitions/database.Clinic'
+        type: array
+      cpf:
+        type: string
+      created_at:
+        type: string
+      createdAt:
+        type: string
+      crm:
+        type: string
+      deleted_at:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        type: string
+      gender:
+        type: string
+      id:
+        type: string
+      keycloak_id:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/database.DoctorPermission'
+        type: array
+      phone:
+        type: string
+      raw_data:
+        items:
+          type: integer
+        type: array
+      updated_at:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.DoctorPermission:
+    properties:
+      break_the_glass:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      doctor:
+        $ref: '#/definitions/database.Doctor'
+      doctor_id:
+        type: string
+      exam:
+        $ref: '#/definitions/database.Exam'
+      exam_id:
+        type: string
+      id:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.Exam:
+    properties:
+      clinic:
+        $ref: '#/definitions/database.Clinic'
+      clinic_id:
+        type: string
+      created_at:
+        type: string
+      createdAt:
+        type: string
+      date:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      exam_result:
+        type: string
+      exam_type:
+        type: string
+      flag_active:
+        type: boolean
+      id:
+        type: string
+      id_cassandra:
+        type: string
+      institution:
+        type: string
+      link_bucket:
+        type: string
+      patient:
+        $ref: '#/definitions/database.Patient'
+      patient_id:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/database.DoctorPermission'
+        type: array
+      updated_at:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  database.Patient:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/database.PatientAddress'
+        type: array
+      birth_date:
+        type: string
+      cpf:
+        type: string
+      created_at:
+        type: string
+      createdAt:
+        type: string
+      deleted_at:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      emails:
+        items:
+          $ref: '#/definitions/database.PatientEmail'
+        type: array
+      emergency_contact:
+        type: string
+      exams:
+        items:
+          $ref: '#/definitions/database.Exam'
+        type: array
+      gender:
+        type: string
+      id:
+        type: string
+      keycloak_id:
+        type: string
+      name:
+        type: string
+      phones:
+        items:
+          $ref: '#/definitions/database.PatientPhone'
+        type: array
+      updated_at:
+        type: string
+      updatedAt:
+        type: string
+      verification_code:
+        type: string
+      verify:
+        type: boolean
+    type: object
+  database.PatientAddress:
+    properties:
+      address:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      patient_id:
+        type: string
+      principal:
+        type: boolean
+      updatedAt:
+        type: string
+    type: object
+  database.PatientEmail:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        type: string
+      id:
+        type: string
+      patient_id:
+        type: string
+      principal:
+        type: boolean
+      updatedAt:
+        type: string
+    type: object
+  database.PatientPhone:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: string
+      patient_id:
+        type: string
+      phone:
+        type: string
+      principal:
+        type: boolean
+      updatedAt:
+        type: string
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  http.VerifyCodeRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  models.AIAnalysisRequest:
+    properties:
+      query:
+        type: string
+    required:
+    - query
+    type: object
+  models.AIAnalysisResponse:
+    properties:
+      analysis:
+        type: string
+      disclaimer:
+        type: string
+    type: object
+  models.AddressRequest:
     properties:
       address:
         type: string
@@ -9,7 +288,7 @@ definitions:
     required:
     - address
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device:
+  models.Device:
     properties:
       device_name:
         type: string
@@ -19,7 +298,7 @@ definitions:
     - device_name
     - public_key
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest:
+  models.EmailRequest:
     properties:
       email:
         type: string
@@ -28,7 +307,7 @@ definitions:
     required:
     - email
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest:
+  models.LoginRequest:
     properties:
       cpf:
         type: string
@@ -39,7 +318,7 @@ definitions:
     - cpf
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse:
+  models.LoginResponse:
     properties:
       access_token:
         type: string
@@ -50,7 +329,7 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest:
+  models.PhoneRequest:
     properties:
       phone:
         type: string
@@ -59,14 +338,14 @@ definitions:
     required:
     - phone
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest:
+  models.RefreshRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse:
+  models.RefreshResponse:
     properties:
       access_token:
         type: string
@@ -77,12 +356,22 @@ definitions:
       token_type:
         type: string
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest:
+  models.ShareExamRequest:
+    properties:
+      doctor_name:
+        type: string
+      exam_id:
+        type: string
+    required:
+    - doctor_name
+    - exam_id
+    type: object
+  models.SignupRequest:
     properties:
       cpf:
         type: string
       device:
-        $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.Device'
+        $ref: '#/definitions/models.Device'
       email:
         type: string
       name:
@@ -97,15 +386,15 @@ definitions:
     - name
     - password
     type: object
-  github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest:
+  models.UpdateUserRequest:
     properties:
       addresses:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.AddressRequest'
+          $ref: '#/definitions/models.AddressRequest'
         type: array
       emails:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.EmailRequest'
+          $ref: '#/definitions/models.EmailRequest'
         type: array
       emergency_contact:
         type: string
@@ -113,8 +402,17 @@ definitions:
         type: string
       phones:
         items:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.PhoneRequest'
+          $ref: '#/definitions/models.PhoneRequest'
         type: array
+    type: object
+  services.UserProfileResponse:
+    properties:
+      address:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
     type: object
 host: api.pohinc.com.br
 info:
@@ -124,6 +422,250 @@ info:
   title: Sistema Centralizador de Dados Clínicos API
   version: "1.0"
 paths:
+  /api/ai/analyze:
+    post:
+      consumes:
+      - application/json
+      description: Envia um texto descrevendo exames ou sintomas e recebe uma análise
+        gerada por IA (segunda opinião)
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Texto da consulta do paciente
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.AIAnalysisRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AIAnalysisResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Análise de Exames por IA
+      tags:
+      - ai
+  /api/exams:
+    get:
+      description: Retorna todos os exames ativos do paciente logado
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/database.Exam'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar Exames do Paciente
+      tags:
+      - exams
+    post:
+      consumes:
+      - multipart/form-data
+      description: Faz o upload de um arquivo de exame e salva os metadados no banco
+      parameters:
+      - description: Arquivo do exame
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Data do exame (YYYY-MM-DD ou formato RFC3339)
+        in: formData
+        name: date
+        required: true
+        type: string
+      - description: Tipo de exame
+        in: formData
+        name: exam_type
+        required: true
+        type: string
+      - description: Instituição
+        in: formData
+        name: institution
+        type: string
+      - description: Resultado do exame
+        in: formData
+        name: exam_result
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Upload de Exame
+      tags:
+      - exams
+  /api/exams/{id}:
+    get:
+      description: Retorna as informações de um exame específico do paciente logado
+      parameters:
+      - description: ID do Exame
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/database.Exam'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter Detalhes do Exame
+      tags:
+      - exams
+  /api/exams/file/{id}/{filename}:
+    get:
+      description: Obtém o stream do arquivo de exame armazenado no MinIO exigindo
+        DPoP proof no header
+      parameters:
+      - description: ID do Exame
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Nome do Arquivo
+        in: path
+        name: filename
+        required: true
+        type: string
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obter Stream do Arquivo de Exame com DPoP
+      tags:
+      - exams
   /api/login:
     post:
       consumes:
@@ -141,14 +683,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.LoginResponse'
+            $ref: '#/definitions/models.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -187,14 +729,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshRequest'
+          $ref: '#/definitions/models.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.RefreshResponse'
+            $ref: '#/definitions/models.RefreshResponse'
         "400":
           description: Bad Request
           schema:
@@ -227,7 +769,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.SignupRequest'
+          $ref: '#/definitions/models.SignupRequest'
       produces:
       - application/json
       responses:
@@ -274,7 +816,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_TCC-Conjunto-de-Aplicacoes-Medicinais_sistema_centralizador_de_dados_clinicos_back_shared_models.UpdateUserRequest'
+          $ref: '#/definitions/models.UpdateUserRequest'
       produces:
       - application/json
       responses:
@@ -303,6 +845,95 @@ paths:
               type: string
             type: object
       summary: Atualização de Usuário
+      tags:
+      - users
+  /api/users/exams/share:
+    post:
+      consumes:
+      - application/json
+      description: Mock de compartilhamento de exame que gera um log no Cassandra
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Dados para compartilhamento
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.ShareExamRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Compartilhar Exame
+      tags:
+      - exams
+  /api/users/profile:
+    get:
+      description: Retorna os dados editáveis do perfil do paciente (nome, telefone,
+        endereço)
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.UserProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Perfil do Usuário
       tags:
       - users
   /api/users/send-verify-email:
@@ -342,6 +973,58 @@ paths:
               type: string
             type: object
       summary: Enviar E-mail de Verificação
+      tags:
+      - auth
+  /api/users/verify-email-code:
+    post:
+      consumes:
+      - application/json
+      description: Valida o código de verificação enviado por e-mail
+      parameters:
+      - description: Access Token (Bearer)
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: DPoP Proof JWT (RFC 9449)
+        in: header
+        name: DPoP
+        required: true
+        type: string
+      - description: Código de verificação
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.VerifyCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Validar E-mail
       tags:
       - auth
 swagger: "2.0"

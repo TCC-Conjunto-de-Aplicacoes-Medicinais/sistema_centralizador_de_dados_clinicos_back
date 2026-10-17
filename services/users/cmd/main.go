@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/http"
@@ -98,11 +97,17 @@ func main() {
 
 	appLogger := logger.NewLogger(cassandraDB.Core)
 	getUserService := services.NewGetUserService(mariaDB)
+	aiAnalysisService := services.NewAIAnalysisService(mariaDB, os.Getenv("GEMINI_API_KEY"), appLogger)
+	minioClient := config.MinIOConnect()
+	examService := services.NewExamService(mariaDB, minioClient, baseURL)
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
 	userHandler.DB = mariaDB
 	clinicHandler := userHttp.NewClinicHandler(mariaDB, smtpService, appLogger)
-	examHandler := userHttp.NewExamHandler(mariaDB, cassandraDB.Core, appLogger)
+	examHandler := userHttp.NewExamHandler(examService, appLogger)
+	examHandler.DB = mariaDB
+	examHandler.Cassandra = cassandraDB.Core
 	consentHandler := userHttp.NewConsentHandler(mariaDB, appLogger)
+	aiHandler := userHttp.NewAIHandler(aiAnalysisService, appLogger)
 
 	router := gin.Default()
 
@@ -119,18 +124,10 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"Message": "OK"})
 	})
 	router.POST("/api/signup", userHandler.Signup)
-	router.GET("/api/exams/file/:id/:filename", examHandler.DownloadExamFile)
 	router.POST("/api/exams/ingest", examHandler.IngestExamFHIR)
 	router.GET("/api/patients/:id/timeline", examHandler.GetPatientTimeline)
-	router.POST("/api/exams", func(c *gin.Context) {
-		if strings.Contains(c.GetHeader("Content-Type"), "application/json") {
-			examHandler.IngestExamFHIR(c)
-			return
-		}
-		c.Next()
-	})
 
-	// --- Rotas de Clínicas ---
+	// --- Rotas de Clínicas (Interoperabilidade Federada) ---
 	router.POST("/api/auth/login", clinicHandler.LoginClinic)
 
 	clinicGroup := router.Group("/api")
@@ -159,13 +156,13 @@ func main() {
 		authGroup.PUT("/users", userHandler.UpdateUser)
 		authGroup.POST("/users/send-verify-email", userHandler.SendVerifyEmail)
 		authGroup.POST("/users/verify-email-code", userHandler.VerifyCode)
-		authGroup.POST("/users/exams/share", userHandler.ShareExam)
-
-		// --- Rotas de Exames do Paciente ---
-		authGroup.GET("/exams", examHandler.ListPatientExams)
-		authGroup.GET("/exams/:id", examHandler.GetExamByID)
+		authGroup.POST("/exams/share", examHandler.ShareExam)
 		authGroup.POST("/exams", examHandler.UploadExam)
+		authGroup.GET("/exams", examHandler.GetExams)
+		authGroup.GET("/exams/:id", examHandler.GetExamByID)
 		authGroup.DELETE("/exams/:id", examHandler.DeleteExam)
+		authGroup.POST("/ai/analyze", aiHandler.AIAnalyze)
+		authGroup.GET("/exams/file/:id/:filename", examHandler.GetExamFile)
 
 		// --- Rotas de Consentimento LGPD (Paciente) ---
 		authGroup.GET("/users/consents", consentHandler.ListConsents)

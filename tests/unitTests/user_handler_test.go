@@ -33,6 +33,7 @@ func setupUnitRouter() *gin.Engine {
 		nil,
 		nil,
 	)
+	examHandler := userHttp.NewExamHandler(nil, nil)
 
 	// Mock AuthMiddleware for unit tests
 	router.Use(func(c *gin.Context) {
@@ -46,7 +47,8 @@ func setupUnitRouter() *gin.Engine {
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/exams/share", examHandler.ShareExam)
+	router.DELETE("/api/exams/:id", examHandler.DeleteExam)
 	
 	return router
 }
@@ -118,7 +120,7 @@ func TestShareExamHandler_BindJSON_Error(t *testing.T) {
 	payloadInvalido := []byte(`{}`)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/users/exams/share", bytes.NewBuffer(payloadInvalido))
+	req := httptest.NewRequest("POST", "/api/exams/share", bytes.NewBuffer(payloadInvalido))
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(w, req)
@@ -137,7 +139,6 @@ func TestServicesNil(t *testing.T) {
 	router.PUT("/api/users", userHandler.UpdateUser)
 	router.POST("/api/users/send-verify-email", userHandler.SendVerifyEmail)
 	router.POST("/api/users/verify-email-code", userHandler.VerifyCode)
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
 	router.GET("/api/users/profile", userHandler.GetUserProfile)
 
 	tests := []struct {
@@ -259,7 +260,7 @@ func TestGetUserProfile_Unauthorized(t *testing.T) {
 
 func TestShareExam_Success(t *testing.T) {
 	appLogger := logger.NewLogger(nil)
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, appLogger)
+	examHandler := userHttp.NewExamHandler(nil, appLogger)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
@@ -267,11 +268,11 @@ func TestShareExam_Success(t *testing.T) {
 		c.Set("userID", "f5c09322-2624-4f0e-b816-7fb4b2b2b2b2")
 		c.Next()
 	})
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/exams/share", examHandler.ShareExam)
 
 	payload := []byte(`{"exam_id": "exam-123", "doctor_name": "Dr. House"}`)
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/users/exams/share", bytes.NewBuffer(payload))
+	req := httptest.NewRequest("POST", "/api/exams/share", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(w, req)
@@ -281,15 +282,15 @@ func TestShareExam_Success(t *testing.T) {
 }
 
 func TestShareExam_Unauthorized(t *testing.T) {
-	userHandler := userHttp.NewUserHandler(nil, nil, nil, nil, nil, nil)
+	examHandler := userHttp.NewExamHandler(nil, nil)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
-	router.POST("/api/users/exams/share", userHandler.ShareExam)
+	router.POST("/api/exams/share", examHandler.ShareExam)
 
 	payload := []byte(`{"exam_id": "exam-123", "doctor_name": "Dr. House"}`)
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/api/users/exams/share", bytes.NewBuffer(payload))
+	req := httptest.NewRequest("POST", "/api/exams/share", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 
 	router.ServeHTTP(w, req)
