@@ -1,27 +1,32 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/database"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/gocql/gocql"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ExamHandler struct {
 	DB        *gorm.DB
+	Cassandra *gocql.Session
 	Logger    *logger.Logger
 	UploadDir string
 }
 
-func NewExamHandler(db *gorm.DB, l *logger.Logger) *ExamHandler {
+func NewExamHandler(db *gorm.DB, cassandra *gocql.Session, l *logger.Logger) *ExamHandler {
 	uploadDir := os.Getenv("UPLOAD_DIR")
 	if uploadDir == "" {
 		uploadDir = "./uploads"
@@ -30,6 +35,7 @@ func NewExamHandler(db *gorm.DB, l *logger.Logger) *ExamHandler {
 
 	return &ExamHandler{
 		DB:        db,
+		Cassandra: cassandra,
 		Logger:    l,
 		UploadDir: uploadDir,
 	}
@@ -185,3 +191,172 @@ func (h *ExamHandler) DeleteExam(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Exame excluído com sucesso"})
 }
+
+// FHIRDiagnosticReport representa a estrutura padronizada HL7 FHIR Release 4 enviada pelas clínicas
+type FHIRDiagnosticReport struct {
+	ResourceType string `json:"resourceType"`
+	ID           string `json:"id"`
+	Status       string `json:"status"`
+	Code         struct {
+		Text   string `json:"text"`
+		Coding []struct {
+			System  string `json:"system"`
+			Code    string `json:"code"`
+			Display string `json:"display"`
+		} `json:"coding"`
+	} `json:"code"`
+	Subject struct {
+		Reference string `json:"reference"`
+	} `json:"subject"`
+	Performer []struct {
+		Display   string `json:"display"`
+		Reference string `json:"reference"`
+	} `json:"performer"`
+	EffectiveDateTime string `json:"effectiveDateTime"`
+	Conclusion        string `json:"conclusion"`
+	Notes             string `json:"notes"`
+	Meta              struct {
+		ClinicID string `json:"clinic_id"`
+		Standard string `json:"standard"`
+	} `json:"meta"`
+}
+
+// IngestExamFHIR permite que instâncias clínicas federadas despachem laudos e exames HL7 FHIR
+func (h *ExamHandler) IngestExamFHIR(c *gin.Context) {
+	var report FHIRDiagnosticReport
+	if err := c.ShouldBindJSON(&report); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Payload JSON inválido: " + err.Error()})
+		return
+	}
+
+	patientID := strings.TrimPrefix(report.Subject.Reference, "Patient/")
+	if patientID == "" {
+		patientID = "1"
+	}
+
+	title := report.Code.Text
+	if title == "" {
+		title = "Laudo Clínico Interoperável"
+	}
+
+	provider := "Clínica POHINC"
+	if len(report.Performer) > 0 && report.Performer[0].Display != "" {
+		provider = report.Performer[0].Display
+	}
+
+	examID := report.ID
+	if examID == "" {
+		examID = uuid.New().String()
+	}
+
+	clinicID := report.Meta.ClinicID
+	if clinicID == "" {
+		clinicID = "CLINIC-FEDERATED"
+	}
+
+	exam := database.Exam{
+		Id:          examID,
+		PatientId:   patientID,
+		ClinicId:    clinicID,
+		LinkBucket:  fmt.Sprintf("/api/exams/fhir/%s", examID),
+		IdCassandra: uuid.New().String(),
+		FlagActive:  true,
+		Title:       title,
+		Provider:    provider,
+		Result:      report.Conclusion,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if err := h.DB.Create(&exam).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao persistir exame no banco central: " + err.Error()})
+		return
+	}
+
+	// Persistência em Apache Cassandra (Pluralidade e Séries Temporais Descentralizadas)
+	if h.Cassandra != nil {
+		payloadBytes, _ := json.Marshal(report)
+		insertCQL := `INSERT INTO patient_clinical_records (
+			patient_id, exam_timestamp, record_id, clinic_id, clinic_name, resource_type, title, conclusion, fhir_payload
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);`
+
+		if err := h.Cassandra.Query(insertCQL,
+			patientID,
+			time.Now(),
+			examID,
+			clinicID,
+			provider,
+			"DiagnosticReport",
+			title,
+			report.Conclusion,
+			string(payloadBytes),
+		).Exec(); err != nil {
+			log.Printf("⚠️ Aviso: falha ao persistir série clínica no Cassandra: %v", err)
+		} else {
+			log.Printf(" Cassandra: Laudo FHIR %s da clínica '%s' persistido com sucesso para o paciente %s", examID, provider, patientID)
+		}
+	}
+
+	if h.Logger != nil {
+		h.Logger.Log(logger.LogEntry{
+			OriginService: "users",
+			ActionType:    "ingest_fhir_exam",
+			Description:   fmt.Sprintf("Clínica %s despachou exame FHIR %s (%s) para paciente %s", clinicID, examID, title, patientID),
+			OriginIP:      c.ClientIP(),
+			ResultStatus:  "success",
+			UserID:        patientID,
+		})
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"status":    "ingested",
+		"id":        exam.Id,
+		"standard":  "HL7-FHIR-R4",
+		"plurality": "Cassandra + MariaDB",
+	})
+}
+
+// GET /api/patients/:id/timeline - Retorna a linha do tempo cumulativa do Cassandra (Pluralidade de Múltiplas Clínicas)
+func (h *ExamHandler) GetPatientTimeline(c *gin.Context) {
+	patientID := c.Param("id")
+	if h.Cassandra == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Cassandra não disponível"})
+		return
+	}
+
+	iter := h.Cassandra.Query(
+		`SELECT patient_id, exam_timestamp, record_id, clinic_id, clinic_name, resource_type, title, conclusion, fhir_payload 
+		 FROM patient_clinical_records WHERE patient_id = ?`,
+		patientID,
+	).Iter()
+
+	var timeline []gin.H
+	var pID, recID, cID, cName, resType, title, conclusion, payload string
+	var tStamp time.Time
+
+	for iter.Scan(&pID, &tStamp, &recID, &cID, &cName, &resType, &title, &conclusion, &payload) {
+		timeline = append(timeline, gin.H{
+			"patient_id":     pID,
+			"exam_timestamp": tStamp.Format(time.RFC3339),
+			"record_id":      recID,
+			"clinic_id":      cID,
+			"clinic_name":    cName,
+			"resource_type":  resType,
+			"title":          title,
+			"conclusion":     conclusion,
+			"fhir_payload":   payload,
+		})
+	}
+	if err := iter.Close(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erro ao consultar timeline no Cassandra: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"patient_id": patientID,
+		"plurality":  "Cassandra Multi-Clinic Timeline",
+		"total":      len(timeline),
+		"records":    timeline,
+	})
+}
+

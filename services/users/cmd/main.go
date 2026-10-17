@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/http"
@@ -100,7 +101,7 @@ func main() {
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
 	userHandler.DB = mariaDB
 	clinicHandler := userHttp.NewClinicHandler(mariaDB, smtpService, appLogger)
-	examHandler := userHttp.NewExamHandler(mariaDB, appLogger)
+	examHandler := userHttp.NewExamHandler(mariaDB, cassandraDB.Core, appLogger)
 	consentHandler := userHttp.NewConsentHandler(mariaDB, appLogger)
 
 	router := gin.Default()
@@ -119,6 +120,15 @@ func main() {
 	})
 	router.POST("/api/signup", userHandler.Signup)
 	router.GET("/api/exams/file/:id/:filename", examHandler.DownloadExamFile)
+	router.POST("/api/exams/ingest", examHandler.IngestExamFHIR)
+	router.GET("/api/patients/:id/timeline", examHandler.GetPatientTimeline)
+	router.POST("/api/exams", func(c *gin.Context) {
+		if strings.Contains(c.GetHeader("Content-Type"), "application/json") {
+			examHandler.IngestExamFHIR(c)
+			return
+		}
+		c.Next()
+	})
 
 	// --- Rotas de Clínicas ---
 	router.POST("/api/auth/login", clinicHandler.LoginClinic)
@@ -129,6 +139,7 @@ func main() {
 		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
 		clinicGroup.POST("/patients/request-data", clinicHandler.RequestPatientData)
 		clinicGroup.GET("/patients/:id/hl7-fhir", clinicHandler.ExportPatientHL7)
+		clinicGroup.GET("/patients/:id/timeline", examHandler.GetPatientTimeline)
 	}
 
 	// --- Rotas com DPoP Obrigatório (Login/Refresh) ---
