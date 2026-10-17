@@ -126,6 +126,7 @@ func main() {
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/exams/ingest", examHandler.IngestExamFHIR)
 	router.GET("/api/patients/:id/timeline", examHandler.GetPatientTimeline)
+	router.GET("/api/patients/:id/fhir-bundle", examHandler.GetPatientFHIRBundle)
 
 	// --- Rotas de Clínicas (Interoperabilidade Federada) ---
 	router.POST("/api/auth/login", clinicHandler.LoginClinic)
@@ -136,6 +137,7 @@ func main() {
 		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
 		clinicGroup.POST("/patients/request-data", clinicHandler.RequestPatientData)
 		clinicGroup.GET("/patients/:id/hl7-fhir", clinicHandler.ExportPatientHL7)
+		clinicGroup.GET("/patients/:id/fhir-bundle", examHandler.GetPatientFHIRBundle)
 		clinicGroup.GET("/patients/:id/timeline", examHandler.GetPatientTimeline)
 	}
 

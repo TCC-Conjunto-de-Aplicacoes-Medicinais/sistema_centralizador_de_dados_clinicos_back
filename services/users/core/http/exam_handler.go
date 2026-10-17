@@ -559,3 +559,75 @@ func (h *ExamHandler) GetPatientTimeline(c *gin.Context) {
 		"records":    timeline,
 	})
 }
+
+// GET /api/patients/:id/fhir-bundle - Retorna o prontuário federado no formato HL7 FHIR Bundle (Release 4)
+func (h *ExamHandler) GetPatientFHIRBundle(c *gin.Context) {
+	patientID := c.Param("id")
+
+	var entries []gin.H
+
+	// 1. Informações básicas do Paciente
+	entries = append(entries, gin.H{
+		"fullUrl": fmt.Sprintf("urn:uuid:%s", patientID),
+		"resource": gin.H{
+			"resourceType": "Patient",
+			"id":           patientID,
+			"active":       true,
+		},
+	})
+
+	// 2. Registros clínicos e laudos persistidos na arquitetura poliglota (Cassandra)
+	if h.Cassandra != nil {
+		iter := h.Cassandra.Query(
+			`SELECT patient_id, exam_timestamp, record_id, clinic_id, clinic_name, resource_type, title, conclusion, fhir_payload 
+			 FROM patient_clinical_records WHERE patient_id = ?`,
+			patientID,
+		).Iter()
+
+		var pID, recID, cID, cName, resType, title, conclusion, payload string
+		var tStamp time.Time
+
+		for iter.Scan(&pID, &tStamp, &recID, &cID, &cName, &resType, &title, &conclusion, &payload) {
+			var parsedPayload map[string]interface{}
+			if err := json.Unmarshal([]byte(payload), &parsedPayload); err == nil && len(parsedPayload) > 0 {
+				entries = append(entries, gin.H{
+					"fullUrl":  fmt.Sprintf("urn:uuid:%s", recID),
+					"resource": parsedPayload,
+				})
+			} else {
+				entries = append(entries, gin.H{
+					"fullUrl": fmt.Sprintf("urn:uuid:%s", recID),
+					"resource": gin.H{
+						"resourceType": "DiagnosticReport",
+						"id":           recID,
+						"status":       "final",
+						"code": gin.H{
+							"text": title,
+						},
+						"subject": gin.H{
+							"reference": "Patient/" + patientID,
+						},
+						"effectiveDateTime": tStamp.Format(time.RFC3339),
+						"conclusion":        conclusion,
+						"performer": []gin.H{
+							{"display": cName},
+						},
+					},
+				})
+			}
+		}
+		_ = iter.Close()
+	}
+
+	// 3. Empacota no padrão oficial HL7 FHIR Bundle (R4 Transaction)
+	bundle := gin.H{
+		"resourceType": "Bundle",
+		"id":           fmt.Sprintf("bundle-%s-%d", patientID, time.Now().Unix()),
+		"type":         "transaction",
+		"timestamp":    time.Now().Format(time.RFC3339),
+		"total":        len(entries),
+		"entry":        entries,
+	}
+
+	c.JSON(http.StatusOK, bundle)
+}
