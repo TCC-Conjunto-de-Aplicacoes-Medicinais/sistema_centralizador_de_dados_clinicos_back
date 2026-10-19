@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func SeedDemoData(db *gorm.DB) error {
@@ -13,7 +14,7 @@ func SeedDemoData(db *gorm.DB) error {
 
 	// 1. Seed Clinics
 	var countClinics int64
-	if err := db.Model(&Clinic{}).Count(&countClinics).Error; err != nil {
+	if err := db.Unscoped().Model(&Clinic{}).Count(&countClinics).Error; err != nil {
 		return err
 	}
 
@@ -75,7 +76,7 @@ func SeedDemoData(db *gorm.DB) error {
 		}
 
 		for _, clinic := range clinics {
-			if err := db.Create(&clinic).Error; err != nil {
+			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&clinic).Error; err != nil {
 				return err
 			}
 		}
@@ -124,7 +125,7 @@ func SeedDemoData(db *gorm.DB) error {
 		}
 
 		for _, user := range clinicalUsers {
-			if err := db.Create(&user).Error; err != nil {
+			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&user).Error; err != nil {
 				return err
 			}
 		}
@@ -132,7 +133,7 @@ func SeedDemoData(db *gorm.DB) error {
 
 	// 2. Seed Patients
 	var countPatients int64
-	if err := db.Model(&Patient{}).Count(&countPatients).Error; err != nil {
+	if err := db.Unscoped().Model(&Patient{}).Count(&countPatients).Error; err != nil {
 		return err
 	}
 
@@ -204,7 +205,7 @@ func SeedDemoData(db *gorm.DB) error {
 		}
 
 		for _, patient := range patients {
-			if err := db.Create(&patient).Error; err != nil {
+			if err := db.Clauses(clause.OnConflict{DoNothing: true}).Create(&patient).Error; err != nil {
 				return err
 			}
 
@@ -215,7 +216,7 @@ func SeedDemoData(db *gorm.DB) error {
 				Email:     patient.Id + "@gmail.com",
 				Principal: true,
 			}
-			db.Create(&email)
+			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&email)
 
 			phone := PatientPhone{
 				Id:        "phone-" + patient.Id,
@@ -223,7 +224,7 @@ func SeedDemoData(db *gorm.DB) error {
 				Phone:     patient.EmergencyContact,
 				Principal: true,
 			}
-			db.Create(&phone)
+			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&phone)
 		}
 
 		// Seed Patient Tokens OTP (valid for 1 year to guarantee they won't expire during tests)
@@ -238,7 +239,7 @@ func SeedDemoData(db *gorm.DB) error {
 		}
 
 		for _, token := range tokens {
-			db.Create(&token)
+			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&token)
 		}
 
 		// Seed Exams
@@ -315,7 +316,7 @@ func SeedDemoData(db *gorm.DB) error {
 		}
 
 		for _, exam := range exams {
-			db.Create(&exam)
+			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&exam)
 		}
 	}
 

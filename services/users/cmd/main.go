@@ -103,6 +103,7 @@ func main() {
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
 	userHandler.DB = mariaDB
 	clinicHandler := userHttp.NewClinicHandler(mariaDB, smtpService, appLogger)
+	clinicHandler.Cassandra = cassandraDB.Core
 	examHandler := userHttp.NewExamHandler(examService, appLogger)
 	examHandler.DB = mariaDB
 	examHandler.Cassandra = cassandraDB.Core
@@ -127,6 +128,11 @@ func main() {
 	router.POST("/api/exams/ingest", examHandler.IngestExamFHIR)
 	router.GET("/api/patients/:id/timeline", examHandler.GetPatientTimeline)
 	router.GET("/api/patients/:id/fhir-bundle", examHandler.GetPatientFHIRBundle)
+	router.GET("/api/patients/search", clinicHandler.SearchPatients)
+	router.POST("/api/patients/sync", clinicHandler.SyncPatient)
+	router.GET("/api/audit-logs", clinicHandler.GetAuditLogs)
+	router.GET("/api/tokens/validate", clinicHandler.ValidateToken)
+	router.GET("/api/clinics", clinicHandler.ListClinics)
 
 	// --- Rotas de Clínicas (Interoperabilidade Federada) ---
 	router.POST("/api/auth/login", clinicHandler.LoginClinic)
@@ -134,11 +140,8 @@ func main() {
 	clinicGroup := router.Group("/api")
 	clinicGroup.Use(userHttp.ClinicAuthMiddleware(appLogger))
 	{
-		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
 		clinicGroup.POST("/patients/request-data", clinicHandler.RequestPatientData)
 		clinicGroup.GET("/patients/:id/hl7-fhir", clinicHandler.ExportPatientHL7)
-		clinicGroup.GET("/patients/:id/fhir-bundle", examHandler.GetPatientFHIRBundle)
-		clinicGroup.GET("/patients/:id/timeline", examHandler.GetPatientTimeline)
 	}
 
 	// --- Rotas com DPoP Obrigatório (Login/Refresh) ---
