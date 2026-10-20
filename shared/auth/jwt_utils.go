@@ -67,3 +67,17 @@ func ExtractUserClaims(authHeader string) (*UserClaims, error) {
 	return userClaims, nil
 }
 
+
+// UnverifiedClaims lê as claims de um JWT SEM validar a assinatura.
+// Use somente depois de validar o token na introspecção do Keycloak.
+func UnverifiedClaims(token string) (map[string]interface{}, error) {
+	parsed, _, err := new(jwt.Parser).ParseUnverified(token, jwt.MapClaims{})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := parsed.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, errors.New("não foi possível ler as claims do token")
+	}
+	return claims, nil
+}

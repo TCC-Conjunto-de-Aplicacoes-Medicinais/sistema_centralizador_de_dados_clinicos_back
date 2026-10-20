@@ -1,7 +1,10 @@
 package http
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/usecase"
 	"github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/shared/auth"
@@ -52,12 +55,24 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase, l *logger.Logger) gin.H
 	}
 }
 
-// AuthMiddleware extrai a identidade do usuário do JWT e injeta no contexto.
+// TokenVerifier valida a assinatura e a vigência do access token (ex.: introspecção no Keycloak).
+type TokenVerifier func(ctx context.Context, token string) error
+
+// AuthMiddleware valida o access token com o verifier e injeta a identidade do usuário no contexto.
 // Também busca o nome atualizado do usuário no MariaDB.
-func AuthMiddleware(db *gorm.DB, l *logger.Logger) gin.HandlerFunc {
+// Sem verifier configurado, todas as requisições são rejeitadas (fail closed).
+func AuthMiddleware(db *gorm.DB, l *logger.Logger, verify TokenVerifier) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		claims, err := auth.ExtractUserClaims(authHeader)
+		if err == nil {
+			if verify == nil {
+				err = errors.New("verificação de token não configurada")
+			} else {
+				rawToken := strings.SplitN(authHeader, " ", 2)[1]
+				err = verify(c.Request.Context(), rawToken)
+			}
+		}
 		if err != nil {
 			l.Log(logger.LogEntry{
 				OriginService: "users",
