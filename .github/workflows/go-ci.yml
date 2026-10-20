@@ -94,6 +94,9 @@ jobs:
             CASSANDRA_CORE_KEYSPACE=${{ secrets.CASSANDRA_CORE_KEYSPACE }}
             DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
             BASE_URL=${{ secrets.BASE_URL }}
+            CLINIC_SYNC_KEY=${{ secrets.CLINIC_SYNC_KEY }}
+            WEBAUTHN_RP_ID=${{ secrets.WEBAUTHN_RP_ID }}
+            WEBAUTHN_ORIGINS=${{ secrets.WEBAUTHN_ORIGINS }}
             SMTP_HOST=${{ secrets.SMTP_HOST }}
             SMTP_PORT=${{ secrets.SMTP_PORT }}
             SMTP_USER=${{ secrets.SMTP_USER }}
