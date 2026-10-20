@@ -21,7 +21,6 @@ type Clinic struct {
 	VerificationCode string    `gorm:"column:verification_code;type:varchar(10)" json:"-"`
 	CreatedAt        time.Time `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt        time.Time `gorm:"type:timestamp;" json:"updated_at"`
-	DeletedAt        time.Time `gorm:"type:timestamp;" json:"deleted_at"`
 
 	KeycloakID *string `gorm:"type:varchar(36);uniqueIndex" json:"keycloak_id,omitempty"`
 

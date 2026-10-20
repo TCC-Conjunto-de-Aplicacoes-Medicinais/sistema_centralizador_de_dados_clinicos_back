@@ -56,13 +56,12 @@ func (s *ExamService) UploadExam(
 
 	// Link para recuperar o arquivo passando pelo endpoint autenticado do backend
 	linkBucket := fmt.Sprintf("%s/api/exams/file/%s/%s", s.BaseURL, examID, filename)
-	mockedCassandraID := gocql.TimeUUID().String() // Mock do Cassandra ID
 
 	exam := &database.Exam{
 		Id:          examID,
 		PatientId:   patientID,
 		LinkBucket:  linkBucket,
-		IdCassandra: mockedCassandraID,
+		IdCassandra: "", // ainda não gravado no Cassandra (pendente)
 		Date:        examDate,
 		ExamType:    examType,
 		Institution: institution,

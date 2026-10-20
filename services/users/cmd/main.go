@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	userHttp "github.com/TCC-Conjunto-de-Aplicacoes-Medicinais/sistema_centralizador_de_dados_clinicos_back/services/users/core/http"
@@ -99,13 +100,31 @@ func main() {
 	userHandler := userHttp.NewUserHandler(signupService, loginService, updateUserService, verifyEmailService, getUserService, appLogger)
 	examHandler := userHttp.NewExamHandler(examService, appLogger)
 	aiHandler := userHttp.NewAIHandler(aiAnalysisService, appLogger)
+	clinicSync := services.NewClinicalSyncService(mariaDB, services.NewClinicalRecordStore(cassandraDB.Core))
+	accessAudit := services.NewAccessAuditService(cassandraDB.Core)
+	rpID := os.Getenv("WEBAUTHN_RP_ID")
+	if rpID == "" {
+		rpID = "localhost"
+	}
+	// Origens separadas por vírgula: https://app.pohinc.com.br, https://<rpID> (iOS), android:apk-key-hash:<hash> (Android).
+	webauthnOrigins := strings.Split(os.Getenv("WEBAUTHN_ORIGINS"), ",")
+	if os.Getenv("WEBAUTHN_ORIGINS") == "" {
+		webauthnOrigins = []string{"http://localhost:8081"}
+	}
+	passkeyService, err := services.NewPasskeyService(mariaDB, smtpService, rpID, webauthnOrigins)
+	if err != nil {
+		log.Fatalf("Erro ao configurar passkeys: %v", err)
+	}
+	passkeyHandler := userHttp.NewPasskeyHandler(passkeyService, clinicSync)
+	clinicHandler := userHttp.NewClinicHandler(clinicSync, keycloakAuth, accessAudit)
+	consentHandler := userHttp.NewConsentHandler(clinicSync, accessAudit, passkeyService)
 
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "DPoP"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "DPoP", "X-Passkey-Challenge", "X-Passkey-Assertion", "X-Recovery-Token"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 	}))
@@ -115,6 +134,11 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"Message": "OK"})
 	})
 	router.POST("/api/signup", userHandler.Signup)
+	router.POST("/api/clinic/login", clinicHandler.Login)
+	router.POST("/api/passkeys/recovery/request", passkeyHandler.RequestRecovery)
+	router.POST("/api/passkeys/recovery/verify", passkeyHandler.VerifyRecovery)
+	router.POST("/api/passkeys/recovery/register/begin", passkeyHandler.BeginRecoveryRegister)
+	router.POST("/api/passkeys/recovery/register/finish", passkeyHandler.FinishRecoveryRegister)
 
 	// --- Rotas com DPoP Obrigatório (Login/Refresh) ---
 	dpopGroup := router.Group("/api")
@@ -127,7 +151,7 @@ func main() {
 	// --- Rotas com Autenticação + DPoP (Perfil/Dados Sensíveis) ---
 	authGroup := router.Group("/api")
 	authGroup.Use(userHttp.DPoPMiddleware(dpopUseCase, appLogger))
-	authGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger))
+	authGroup.Use(userHttp.AuthMiddleware(mariaDB, appLogger, keycloakAuth.IntrospectToken))
 	{
 		authGroup.GET("/users/profile", userHandler.GetUserProfile)
 		authGroup.PUT("/users", userHandler.UpdateUser)
@@ -140,6 +164,24 @@ func main() {
 		authGroup.DELETE("/exams/:id", examHandler.DeleteExam)
 		authGroup.POST("/ai/analyze", aiHandler.AIAnalyze)
 		authGroup.GET("/exams/file/:id/:filename", examHandler.GetExamFile)
+		authGroup.POST("/consents", consentHandler.GrantConsent)
+		authGroup.GET("/consents", consentHandler.ListConsents)
+		authGroup.DELETE("/consents/:id", consentHandler.RevokeConsent)
+		authGroup.GET("/audit", consentHandler.ListMyAudit)
+		authGroup.POST("/passkeys/register/begin", passkeyHandler.BeginRegister)
+		authGroup.POST("/passkeys/register/finish", passkeyHandler.FinishRegister)
+		authGroup.POST("/passkeys/action/begin", passkeyHandler.BeginAction)
+	}
+
+	// --- Rotas das clínicas federadas (X-Clinic-Key; sem DPoP de paciente) ---
+	clinicGroup := router.Group("/api")
+	clinicGroup.Use(userHttp.ClinicAccessMiddleware(os.Getenv("CLINIC_SYNC_KEY"), keycloakAuth.VerifyAccessToken))
+	{
+		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
+		clinicGroup.POST("/patients/sync", clinicHandler.SyncPatient)
+		clinicGroup.POST("/exams/ingest", clinicHandler.IngestRecord)
+		clinicGroup.GET("/patients/:id/fhir-bundle", clinicHandler.FHIRBundle)
+		clinicGroup.GET("/patients/:id/audit", clinicHandler.PatientAudit)
 	}
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -1,12 +1,14 @@
 package unitTests
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +27,7 @@ func TestAuthMiddleware_Success(t *testing.T) {
 	router := gin.New()
 
 	// Mock Logger (nulo para teste)
-	router.Use(userHttp.AuthMiddleware(nil, nil))
+	router.Use(userHttp.AuthMiddleware(nil, nil, acceptAllTokens))
 	router.GET("/test", func(c *gin.Context) {
 		userID := c.GetString("userID")
 		userName := c.GetString("userName")
@@ -59,7 +61,7 @@ func TestAuthMiddleware_Success(t *testing.T) {
 func TestAuthMiddleware_Failure(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(userHttp.AuthMiddleware(nil, nil))
+	router.Use(userHttp.AuthMiddleware(nil, nil, acceptAllTokens))
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test", nil)
@@ -160,3 +162,23 @@ func TestDPoPMiddleware_Failure_InvalidProof(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
+
+func acceptAllTokens(_ context.Context, _ string) error { return nil }
+
+func TestAuthMiddleware_RejectsTokenRejectedByVerifier(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	rejectAll := func(_ context.Context, _ string) error { return errors.New("token inativo") }
+	router.Use(userHttp.AuthMiddleware(nil, nil, rejectAll))
+	router.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": "forjado"})
+	tokenString, _ := token.SignedString([]byte("qualquer-chave"))
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenString)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
