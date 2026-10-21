@@ -126,6 +126,7 @@ func main() {
 		log.Fatalf("Erro ao configurar passkeys: %v", err)
 	}
 	passkeyHandler := userHttp.NewPasskeyHandler(passkeyService, clinicSync)
+	accessCodeHandler := userHttp.NewAccessCodeHandler(services.NewAccessCodeService(mariaDB, clinicSync), clinicSync, passkeyService, accessAudit)
 	clinicHandler := userHttp.NewClinicHandler(clinicSync, clinicKeycloak, accessAudit)
 	consentHandler := userHttp.NewConsentHandler(clinicSync, accessAudit, passkeyService)
 
@@ -181,6 +182,7 @@ func main() {
 		authGroup.POST("/passkeys/register/begin", passkeyHandler.BeginRegister)
 		authGroup.POST("/passkeys/register/finish", passkeyHandler.FinishRegister)
 		authGroup.POST("/passkeys/action/begin", passkeyHandler.BeginAction)
+		authGroup.POST("/access-codes", accessCodeHandler.Generate)
 	}
 
 	// --- Rotas das clínicas federadas (X-Clinic-Key; sem DPoP de paciente) ---
@@ -190,6 +192,7 @@ func main() {
 		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
 		clinicGroup.POST("/patients/sync", clinicHandler.SyncPatient)
 		clinicGroup.POST("/exams/ingest", clinicHandler.IngestRecord)
+		clinicGroup.POST("/access-codes/redeem", accessCodeHandler.Redeem)
 		clinicGroup.GET("/patients/:id/fhir-bundle", clinicHandler.FHIRBundle)
 		clinicGroup.GET("/patients/:id/audit", clinicHandler.PatientAudit)
 	}

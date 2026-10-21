@@ -27,6 +27,11 @@ func NewConsentHandler(sync *services.ClinicalSyncService, audit *services.Acces
 // verifyPasskey confere a assinatura da passkey para a ação. Headers: X-Passkey-Challenge e
 // X-Passkey-Assertion (JSON da resposta do navegador, em base64url). Responde o erro se não conferir.
 func (h *ConsentHandler) verifyPasskey(c *gin.Context, patientID, action string) bool {
+	return verifyPasskeyAssertion(c, h.passkeys, patientID, action)
+}
+
+// verifyPasskeyAssertion é usada por consentimento e por código de acesso.
+func verifyPasskeyAssertion(c *gin.Context, passkeys *services.PasskeyService, patientID, action string) bool {
 	raw, err := base64.RawURLEncoding.DecodeString(c.GetHeader("X-Passkey-Assertion"))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "assinatura da passkey ausente"})
@@ -37,7 +42,7 @@ func (h *ConsentHandler) verifyPasskey(c *gin.Context, patientID, action string)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "falha ao ler assinatura"})
 		return false
 	}
-	if err := h.passkeys.VerifyAction(c.Request.Context(), patientID, c.GetHeader("X-Passkey-Challenge"), action, req); err != nil {
+	if err := passkeys.VerifyAction(c.Request.Context(), patientID, c.GetHeader("X-Passkey-Challenge"), action, req); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return false
 	}

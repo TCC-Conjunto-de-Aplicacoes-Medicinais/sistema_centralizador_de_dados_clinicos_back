@@ -22,6 +22,7 @@ func RunMigrations(db *gorm.DB) error {
 		&PatientConsent{},
 		&PatientPasskey{},
 		&PatientRecovery{},
+		&PatientAccessCode{},
 		// &Appointments{},
 		// etc...
 	)
