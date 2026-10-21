@@ -114,7 +114,20 @@ func ParseAndValidate(proofJWT, expectedHTM, expectedHTU string) (string, error)
 		expectedHTU = unescapedExpected
 	}
 
-	if htu != expectedHTU {
+	htuMatch := (htu == expectedHTU)
+	if !htuMatch {
+		parsedHTU, err1 := url.Parse(htu)
+		parsedExp, err2 := url.Parse(expectedHTU)
+		if err1 == nil && err2 == nil && parsedHTU.Path != "" && parsedExp.Path != "" {
+			htuMatch = (parsedHTU.Path == parsedExp.Path)
+		} else if strings.HasPrefix(htu, "/") {
+			if parsedExp, err := url.Parse(expectedHTU); err == nil && parsedExp.Path == htu {
+				htuMatch = true
+			}
+		}
+	}
+
+	if !htuMatch {
 		return "", fmt.Errorf("dpop: htu %q inválido, esperado %q", claims.HTU, expectedHTU)
 	}
 
