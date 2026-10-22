@@ -1,7 +1,15 @@
 version: '3.8'
 
+# Limite dos logs de cada container (evita o disco encher com logs sem fim).
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   mariadb:
+    logging: *default-logging
     image: mariadb:11
     container_name: mariadb_server_master
     restart: always
@@ -27,6 +35,7 @@ services:
           memory: 512M
 
   keycloak:
+    logging: *default-logging
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak_server_master
     restart: always
@@ -51,6 +60,7 @@ services:
           memory: 2G
 
   cassandra:
+    logging: *default-logging
     image: cassandra:latest
     container_name: cassandra_server
     restart: unless-stopped
@@ -82,6 +92,7 @@ services:
           memory: 2G
 
   users-service:
+    logging: *default-logging
     image: ${DOCKERHUB_USERNAME}/users-service:latest
     container_name: users_service_master
     restart: always
