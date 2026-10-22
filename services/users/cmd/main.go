@@ -21,6 +21,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	"github.com/Nerzal/gocloak/v13"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -48,6 +49,15 @@ func main() {
 		os.Getenv("KEYCLOAK_CLIENT_SECRET"),
 		os.Getenv("KEYCLOAK_REALM"),
 	)
+
+	// Clínicas ficam em outra realm (contas criadas pelo wizard). Rotas das clínicas e o login da clínica usam esta.
+	// Sem o teste de login da InitKeycloak: uma configuração errada da clínica não derruba o app do paciente.
+	clinicKeycloak := &config.KeycloakAuth{
+		Client:       gocloak.NewClient(os.Getenv("KEYCLOAK_URL")),
+		ClientID:     os.Getenv("KEYCLOAK_CLINIC_CLIENT_ID"),
+		ClientSecret: os.Getenv("KEYCLOAK_CLINIC_CLIENT_SECRET"),
+		Realm:        os.Getenv("KEYCLOAK_CLINIC_REALM"),
+	}
 
 	cassandraDB := config.CassandraConnect()
 	defer cassandraDB.Close()
@@ -116,7 +126,8 @@ func main() {
 		log.Fatalf("Erro ao configurar passkeys: %v", err)
 	}
 	passkeyHandler := userHttp.NewPasskeyHandler(passkeyService, clinicSync)
-	clinicHandler := userHttp.NewClinicHandler(clinicSync, keycloakAuth, accessAudit)
+	accessCodeHandler := userHttp.NewAccessCodeHandler(services.NewAccessCodeService(mariaDB, clinicSync), clinicSync, passkeyService, accessAudit)
+	clinicHandler := userHttp.NewClinicHandler(clinicSync, clinicKeycloak, accessAudit)
 	consentHandler := userHttp.NewConsentHandler(clinicSync, accessAudit, passkeyService)
 
 	router := gin.Default()
@@ -171,15 +182,18 @@ func main() {
 		authGroup.POST("/passkeys/register/begin", passkeyHandler.BeginRegister)
 		authGroup.POST("/passkeys/register/finish", passkeyHandler.FinishRegister)
 		authGroup.POST("/passkeys/action/begin", passkeyHandler.BeginAction)
+		authGroup.POST("/access-codes", accessCodeHandler.Generate)
 	}
 
 	// --- Rotas das clínicas federadas (X-Clinic-Key; sem DPoP de paciente) ---
 	clinicGroup := router.Group("/api")
-	clinicGroup.Use(userHttp.ClinicAccessMiddleware(os.Getenv("CLINIC_SYNC_KEY"), keycloakAuth.VerifyAccessToken))
+	clinicGroup.Use(userHttp.ClinicAccessMiddleware(os.Getenv("CLINIC_SYNC_KEY"), clinicKeycloak.VerifyAccessToken))
 	{
 		clinicGroup.GET("/patients/search", clinicHandler.SearchPatients)
 		clinicGroup.POST("/patients/sync", clinicHandler.SyncPatient)
 		clinicGroup.POST("/exams/ingest", clinicHandler.IngestRecord)
+		clinicGroup.POST("/access-codes/redeem", accessCodeHandler.Redeem)
+		clinicGroup.POST("/patients/:id/break-glass", clinicHandler.BreakGlass)
 		clinicGroup.GET("/patients/:id/fhir-bundle", clinicHandler.FHIRBundle)
 		clinicGroup.GET("/patients/:id/audit", clinicHandler.PatientAudit)
 	}

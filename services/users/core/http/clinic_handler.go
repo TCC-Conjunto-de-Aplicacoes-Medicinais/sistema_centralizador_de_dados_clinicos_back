@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -126,6 +127,8 @@ func (h *ClinicHandler) Login(c *gin.Context) {
 	ctx := c.Request.Context()
 	tok, err := h.kc.Client.Login(ctx, h.kc.ClientID, h.kc.ClientSecret, h.kc.Realm, req.Email, req.Password)
 	if err != nil {
+		// Só o motivo devolvido pelo Keycloak vai para o log; a senha nunca é registrada.
+		log.Printf("[clinic/login] Keycloak recusou o login (realm=%s client=%s): %v", h.kc.Realm, h.kc.ClientID, err)
 		h.limiter.recordFailure(req.Email, now)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "credenciais inválidas"})
 		return
