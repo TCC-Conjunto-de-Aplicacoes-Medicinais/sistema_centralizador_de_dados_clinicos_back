@@ -34,7 +34,12 @@ func (h *PatientProfileHandler) Get(c *gin.Context) {
 			phone = ph.Phone
 		}
 	}
+	birth := ""
+	if !p.BirthDate.IsZero() {
+		birth = p.BirthDate.Format("2006-01-02")
+	}
 	c.JSON(http.StatusOK, gin.H{
+		"birth_date": birth,
 		"name":       p.Name,
 		"cpf":        p.CPF,
 		"phone":      phone,
@@ -45,6 +50,7 @@ func (h *PatientProfileHandler) Get(c *gin.Context) {
 }
 
 type updateProfileRequest struct {
+	BirthDate *string `json:"birth_date"`
 	Phone     *string `json:"phone"`
 	Insurance *string `json:"insurance"`
 	BloodType *string `json:"blood_type"`
@@ -64,6 +70,7 @@ func (h *PatientProfileHandler) Update(c *gin.Context) {
 		return
 	}
 	if err := h.sync.UpdatePatientProfile(c.Request.Context(), patientID, services.PatientProfileInput{
+		BirthDate: req.BirthDate,
 		Phone:     req.Phone,
 		Insurance: req.Insurance,
 		BloodType: req.BloodType,

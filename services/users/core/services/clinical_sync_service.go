@@ -431,6 +431,7 @@ func str(m map[string]interface{}, path ...string) string {
 
 // PatientProfileInput são os dados do cadastro que o próprio paciente pode editar no app.
 type PatientProfileInput struct {
+	BirthDate *string
 	Phone     *string
 	Insurance *string
 	BloodType *string
@@ -440,6 +441,13 @@ type PatientProfileInput struct {
 // UpdatePatientProfile grava as alterações feitas pelo paciente (só os campos enviados).
 func (s *ClinicalSyncService) UpdatePatientProfile(ctx context.Context, patientID string, in PatientProfileInput) error {
 	updates := map[string]interface{}{}
+	if in.BirthDate != nil && strings.TrimSpace(*in.BirthDate) != "" {
+		birth, err := parseBirthDate(*in.BirthDate)
+		if err != nil {
+			return err
+		}
+		updates["birth_date"] = birth
+	}
 	if in.Insurance != nil {
 		updates["insurance"] = strings.TrimSpace(*in.Insurance)
 	}
