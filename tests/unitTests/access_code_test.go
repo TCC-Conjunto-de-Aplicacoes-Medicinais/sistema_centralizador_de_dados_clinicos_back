@@ -17,7 +17,7 @@ func TestRedeemAccessCode_UnknownCPFIsRejected(t *testing.T) {
 	mock.ExpectQuery("SELECT").WillReturnRows(sqlmock.NewRows([]string{"id"}))
 	codes := services.NewAccessCodeService(db, services.NewClinicalSyncService(db, nil))
 
-	_, _, err := codes.Redeem(t.Context(), "52998224725", "123456")
+	_, _, err := codes.Redeem(t.Context(), "52998224725", "123456", func(string) error { return nil })
 	assert.ErrorIs(t, err, services.ErrAccessCodeInvalid)
 }
 

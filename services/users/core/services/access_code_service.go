@@ -59,10 +59,10 @@ func (s *AccessCodeService) Generate(ctx context.Context, patientID string) (str
 	return code, expires, nil
 }
 
-// Redeem valida o código informado pela clínica para o CPF do paciente. Se estiver certo, grava o
-// consentimento de leitura com vencimento igual ao do código e marca o código como usado.
-// Devolve o id do paciente (quando encontrado) e até quando o acesso vale.
-func (s *AccessCodeService) Redeem(ctx context.Context, cpf, code string) (string, time.Time, error) {
+// Redeem valida o código informado pela clínica para o CPF do paciente. Se estiver certo, grava a
+// auditoria (record) e só então o consentimento de leitura com vencimento igual ao do código.
+// Se a auditoria falhar, o acesso não é liberado. Devolve o id do paciente e até quando o acesso vale.
+func (s *AccessCodeService) Redeem(ctx context.Context, cpf, code string, record func(patientID string) error) (string, time.Time, error) {
 	var p database.Patient
 	if err := s.DB.WithContext(ctx).Where("cpf = ?", digitsOnly(cpf)).Take(&p).Error; err != nil {
 		return "", time.Time{}, ErrAccessCodeInvalid
@@ -84,6 +84,11 @@ func (s *AccessCodeService) Redeem(ctx context.Context, cpf, code string) (strin
 	}
 	if subtle.ConstantTimeCompare([]byte(hashSecret(strings.TrimSpace(code))), []byte(row.CodeHash)) != 1 {
 		return p.Id, time.Time{}, ErrAccessCodeInvalid
+	}
+
+	// Auditoria antes da concessão: se ela falhar, o acesso não é liberado.
+	if err := record(p.Id); err != nil {
+		return p.Id, time.Time{}, fmt.Errorf("falha ao registrar auditoria: %w", err)
 	}
 
 	validUntil := row.ExpiresAt

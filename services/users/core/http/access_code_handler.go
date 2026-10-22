@@ -55,18 +55,17 @@ func (h *AccessCodeHandler) Redeem(c *gin.Context) {
 		return
 	}
 	actor := c.GetString("clinicActor")
-	patientID, validUntil, err := h.codes.Redeem(c.Request.Context(), req.CPF, req.Code)
-	if err != nil {
-		_ = h.audit.Record(actor, "access_code_redeem", patientID, "negado")
-		status := http.StatusForbidden
-		if !errors.Is(err, services.ErrAccessCodeInvalid) {
-			status = http.StatusInternalServerError
-		}
-		c.JSON(status, gin.H{"error": err.Error()})
-		return
+	record := func(patientID string) error {
+		return h.audit.Record(actor, "access_code_redeem", patientID, "ok")
 	}
-	if err := h.audit.Record(actor, "access_code_redeem", patientID, "ok"); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "não foi possível registrar a auditoria"})
+	patientID, validUntil, err := h.codes.Redeem(c.Request.Context(), req.CPF, req.Code, record)
+	if err != nil {
+		if errors.Is(err, services.ErrAccessCodeInvalid) {
+			_ = h.audit.Record(actor, "access_code_redeem", patientID, "negado")
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "não foi possível liberar o acesso; nada foi registrado"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"access_until": validUntil})
