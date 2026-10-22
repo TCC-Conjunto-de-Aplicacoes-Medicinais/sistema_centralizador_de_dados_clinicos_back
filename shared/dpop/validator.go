@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 )
@@ -119,10 +120,13 @@ func ParseAndValidate(proofJWT, expectedHTM, expectedHTU string) (string, error)
 		parsedHTU, err1 := url.Parse(htu)
 		parsedExp, err2 := url.Parse(expectedHTU)
 		if err1 == nil && err2 == nil && parsedHTU.Path != "" && parsedExp.Path != "" {
-			htuMatch = (parsedHTU.Path == parsedExp.Path)
+			cleanHTUPath := path.Clean("/" + parsedHTU.Path)
+			cleanExpPath := path.Clean("/" + parsedExp.Path)
+			htuMatch = (cleanHTUPath == cleanExpPath)
 		} else if strings.HasPrefix(htu, "/") {
-			if parsedExp, err := url.Parse(expectedHTU); err == nil && parsedExp.Path == htu {
-				htuMatch = true
+			if parsedExp, err := url.Parse(expectedHTU); err == nil {
+				cleanExpPath := path.Clean("/" + parsedExp.Path)
+				htuMatch = (path.Clean(htu) == cleanExpPath)
 			}
 		}
 	}
@@ -136,8 +140,8 @@ func ParseAndValidate(proofJWT, expectedHTM, expectedHTU string) (string, error)
 	if diff < 0 {
 		diff = -diff
 	}
-	if diff > 60 {
-		return "", errors.New("dpop: iat fora da janela de 60 segundos")
+	if diff > 300 {
+		return "", errors.New("dpop: iat fora da janela de tolerância de 300 segundos")
 	}
 
 	sigBytes, err := base64.RawURLEncoding.DecodeString(parts[2])

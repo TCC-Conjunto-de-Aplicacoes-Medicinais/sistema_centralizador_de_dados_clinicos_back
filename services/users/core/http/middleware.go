@@ -31,11 +31,12 @@ func DPoPMiddleware(dpopUC *usecase.ValidateDPoPUseCase, l *logger.Logger) gin.H
 			return
 		}
 
-		// Obtém a URL base injetada no UseCase
-		baseURL := dpopUC.BaseURL
+		// Obtém a URL base injetada no UseCase e normaliza removendo eventuais barras finais
+		baseURL := strings.TrimRight(dpopUC.BaseURL, "/")
 
-		// O HTU no DPoP deve ser o caminho completo chamado
-		htu := baseURL + c.Request.URL.Path
+		// O HTU no DPoP deve ser o caminho completo chamado (normalizado com barra inicial única)
+		path := "/" + strings.TrimLeft(c.Request.URL.Path, "/")
+		htu := baseURL + path
 		htm := c.Request.Method
 
 		if err := dpopUC.Execute(proofJWT, htm, htu); err != nil {
