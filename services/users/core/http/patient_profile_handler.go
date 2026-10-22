@@ -81,3 +81,18 @@ func (h *PatientProfileHandler) Update(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
+
+// ClinicRecords GET /api/patients/me/clinic-records — laudos e exames que as clínicas enviaram sobre o próprio paciente.
+func (h *PatientProfileHandler) ClinicRecords(c *gin.Context) {
+	patientID, err := h.sync.PatientIDByKeycloakID(c.Request.Context(), c.GetString("userID"))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "paciente não encontrado para este usuário"})
+		return
+	}
+	list, err := h.sync.PatientClinicRecords(c.Request.Context(), patientID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "não foi possível carregar os laudos"})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}

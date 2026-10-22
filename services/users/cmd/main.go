@@ -187,6 +187,7 @@ func main() {
 		authGroup.POST("/access-codes", accessCodeHandler.Generate)
 		authGroup.GET("/patients/me", profileHandler.Get)
 		authGroup.PUT("/patients/me", profileHandler.Update)
+		authGroup.GET("/patients/me/clinic-records", profileHandler.ClinicRecords)
 	}
 
 	// --- Rotas das clínicas federadas (X-Clinic-Key; sem DPoP de paciente) ---

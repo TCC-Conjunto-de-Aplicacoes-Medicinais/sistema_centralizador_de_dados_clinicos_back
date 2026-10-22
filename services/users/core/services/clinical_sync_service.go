@@ -479,3 +479,55 @@ func (s *ClinicalSyncService) GetPatientProfile(ctx context.Context, patientID s
 	}
 	return &p, nil
 }
+
+// ClinicRecordSummary é o resumo de um laudo/exame que uma clínica enviou sobre o paciente.
+type ClinicRecordSummary struct {
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	Date       string `json:"date"`
+	Conclusion string `json:"conclusion"`
+	Provider   string `json:"provider"`
+	Origin     string `json:"origin_clinic"`
+}
+
+// PatientClinicRecords devolve os laudos (DiagnosticReport) do paciente vindos das clínicas, do mais recente para o mais antigo.
+func (s *ClinicalSyncService) PatientClinicRecords(ctx context.Context, patientID string) ([]ClinicRecordSummary, error) {
+	stored, err := s.Records.ListByPatient(ctx, patientID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ClinicRecordSummary, 0, len(stored))
+	for _, rec := range stored {
+		var res map[string]interface{}
+		if err := json.Unmarshal([]byte(rec.FHIRJSON), &res); err != nil {
+			continue
+		}
+		if t, _ := res["resourceType"].(string); t != "DiagnosticReport" {
+			continue
+		}
+		title := "Exame clínico"
+		if code, ok := res["code"].(map[string]interface{}); ok {
+			if txt, ok := code["text"].(string); ok && txt != "" {
+				title = txt
+			}
+		}
+		conclusion, _ := res["conclusion"].(string)
+		provider := "Clínica"
+		if perf, ok := res["performer"].([]interface{}); ok && len(perf) > 0 {
+			if pm, ok := perf[0].(map[string]interface{}); ok {
+				if d, ok := pm["display"].(string); ok && d != "" {
+					provider = d
+				}
+			}
+		}
+		out = append(out, ClinicRecordSummary{
+			ID:         rec.ID,
+			Title:      title,
+			Date:       rec.EffectiveAt.Format("2006-01-02"),
+			Conclusion: conclusion,
+			Provider:   provider,
+			Origin:     rec.OriginClinicID,
+		})
+	}
+	return out, nil
+}
