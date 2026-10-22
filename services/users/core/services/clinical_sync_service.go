@@ -428,3 +428,46 @@ func str(m map[string]interface{}, path ...string) string {
 	}
 	return ""
 }
+
+// PatientProfileInput são os dados do cadastro que o próprio paciente pode editar no app.
+type PatientProfileInput struct {
+	Phone     *string
+	Insurance *string
+	BloodType *string
+	Allergies *string
+}
+
+// UpdatePatientProfile grava as alterações feitas pelo paciente (só os campos enviados).
+func (s *ClinicalSyncService) UpdatePatientProfile(ctx context.Context, patientID string, in PatientProfileInput) error {
+	updates := map[string]interface{}{}
+	if in.Insurance != nil {
+		updates["insurance"] = strings.TrimSpace(*in.Insurance)
+	}
+	if in.BloodType != nil {
+		updates["blood_type"] = strings.TrimSpace(*in.BloodType)
+	}
+	if in.Allergies != nil {
+		updates["allergies"] = strings.TrimSpace(*in.Allergies)
+	}
+	if len(updates) > 0 {
+		if err := s.DB.WithContext(ctx).Model(&database.Patient{}).Where("id = ?", patientID).Updates(updates).Error; err != nil {
+			return fmt.Errorf("falha ao atualizar cadastro: %w", err)
+		}
+	}
+	if in.Phone != nil && strings.TrimSpace(*in.Phone) != "" {
+		s.DB.WithContext(ctx).Where("patient_id = ? AND principal = ?", patientID, true).Delete(&database.PatientPhone{})
+		if err := s.DB.WithContext(ctx).Create(&database.PatientPhone{Id: gocql.TimeUUID().String(), PatientID: patientID, Phone: strings.TrimSpace(*in.Phone), Principal: true}).Error; err != nil {
+			return fmt.Errorf("falha ao gravar telefone: %w", err)
+		}
+	}
+	return nil
+}
+
+// GetPatientProfile devolve o cadastro do paciente com telefone principal.
+func (s *ClinicalSyncService) GetPatientProfile(ctx context.Context, patientID string) (*database.Patient, error) {
+	var p database.Patient
+	if err := s.DB.WithContext(ctx).Preload("Phones").Where("id = ?", patientID).First(&p).Error; err != nil {
+		return nil, ErrPatientNotFound
+	}
+	return &p, nil
+}
