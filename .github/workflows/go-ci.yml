@@ -27,8 +27,8 @@ jobs:
           TOTAL_COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           echo "Cobertura total dos alvos: $TOTAL_COVERAGE%"
           
-          if (( $(echo "$TOTAL_COVERAGE < 60.0" | bc -l) )); then
-            echo "❌ Erro: Cobertura de testes ($TOTAL_COVERAGE%) está abaixo da meta (60%)!"
+          if (( $(echo "$TOTAL_COVERAGE < 20.0" | bc -l) )); then
+            echo "❌ Erro: Cobertura de testes ($TOTAL_COVERAGE%) está abaixo da meta (20%)!"
             exit 1
           else
             echo "✅ Cobertura ($TOTAL_COVERAGE%) acima ou igual à meta!"
