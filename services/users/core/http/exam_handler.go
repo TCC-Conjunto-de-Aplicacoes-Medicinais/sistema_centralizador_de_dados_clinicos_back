@@ -226,7 +226,15 @@ func (h *ExamHandler) GetExamFile(c *gin.Context) {
 			ResultStatus:  "error",
 			UserID:        patientID,
 		})
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "acesso negado") {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		if strings.Contains(err.Error(), "não encontrado") {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer fileStream.Close()

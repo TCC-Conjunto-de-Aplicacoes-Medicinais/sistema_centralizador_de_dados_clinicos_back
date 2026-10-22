@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -47,6 +48,21 @@ func MinIOConnect() *MinIOClient {
 	}
 
 	log.Println("✅ Conexão com MinIO estabelecida com sucesso!")
+
+	// Verifica e cria o bucket automaticamente caso ainda não exista
+	ctx := context.Background()
+	exists, errBucket := minioClient.BucketExists(ctx, bucketName)
+	if errBucket != nil {
+		log.Printf("⚠️ Aviso ao verificar bucket '%s' no MinIO: %v", bucketName, errBucket)
+	} else if !exists {
+		if err := minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{}); err != nil {
+			log.Printf("⚠️ Erro ao criar bucket '%s' no MinIO: %v", bucketName, err)
+		} else {
+			log.Printf("✅ Bucket '%s' criado com sucesso no MinIO!", bucketName)
+		}
+	} else {
+		log.Printf("✅ Bucket '%s' pronto no MinIO!", bucketName)
+	}
 
 	return &MinIOClient{
 		Client:     minioClient,

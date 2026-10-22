@@ -54,6 +54,13 @@ func setupMockMinIO(t *testing.T) (*httptest.Server, *config.MinIOClient) {
 			return
 		}
 
+		// 4. Object Upload (PUT)
+		if r.Method == http.MethodPut {
+			w.Header().Set("ETag", `"mock-etag"`)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		w.WriteHeader(http.StatusNotFound)
 	}))
 

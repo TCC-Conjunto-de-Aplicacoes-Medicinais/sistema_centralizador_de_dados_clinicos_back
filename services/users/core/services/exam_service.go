@@ -46,6 +46,14 @@ func (s *ExamService) UploadExam(
 	// Define o nome do objeto usando a estrutura: patient_id/exam_type/exam_id_filename
 	objectName := fmt.Sprintf("%s/%s/%s_%s", patientID, examType, examID, filename)
 
+	// Garante que o bucket existe antes do upload
+	if s.MinIO != nil && s.MinIO.Client != nil {
+		exists, errBucket := s.MinIO.Client.BucketExists(ctx, s.MinIO.BucketName)
+		if errBucket == nil && !exists {
+			_ = s.MinIO.Client.MakeBucket(ctx, s.MinIO.BucketName, minio.MakeBucketOptions{})
+		}
+	}
+
 	// Faz o upload para o MinIO
 	_, err := s.MinIO.Client.PutObject(ctx, s.MinIO.BucketName, objectName, file, fileSize, minio.PutObjectOptions{
 		ContentType: contentType,
