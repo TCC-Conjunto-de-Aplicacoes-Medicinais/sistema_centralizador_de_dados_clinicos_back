@@ -191,7 +191,35 @@ func (s *ClinicalSyncService) BuildPatientBundle(ctx context.Context, patientID 
 	if !ok {
 		return nil, ErrNoConsent
 	}
+	return s.buildBundle(ctx, patientID)
+}
 
+// ErrNotDemoPatient: break-the-glass só vale para pacientes de demonstração.
+var ErrNotDemoPatient = errors.New("break-the-glass só é permitido para pacientes de demonstração")
+
+// IsDemoPatient indica se o paciente tem e-mail em @example.com (domínio reservado para exemplos, nunca de paciente real).
+func (s *ClinicalSyncService) IsDemoPatient(ctx context.Context, patientID string) (bool, error) {
+	var n int64
+	err := s.DB.WithContext(ctx).Model(&database.PatientEmail{}).
+		Where("patient_id = ? AND LOWER(email) LIKE ?", patientID, "%@example.com").
+		Count(&n).Error
+	return n > 0, err
+}
+
+// BuildDemoBundle monta o bundle sem consentimento, mas só para paciente de demonstração.
+// Quem chama deve registrar a auditoria antes de devolver o bundle.
+func (s *ClinicalSyncService) BuildDemoBundle(ctx context.Context, patientID string) (map[string]interface{}, error) {
+	demo, err := s.IsDemoPatient(ctx, patientID)
+	if err != nil {
+		return nil, err
+	}
+	if !demo {
+		return nil, ErrNotDemoPatient
+	}
+	return s.buildBundle(ctx, patientID)
+}
+
+func (s *ClinicalSyncService) buildBundle(ctx context.Context, patientID string) (map[string]interface{}, error) {
 	var p database.Patient
 	if err := s.DB.WithContext(ctx).Where("id = ?", patientID).First(&p).Error; err != nil {
 		return nil, ErrPatientNotFound

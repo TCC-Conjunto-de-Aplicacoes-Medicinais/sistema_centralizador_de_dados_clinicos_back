@@ -193,6 +193,7 @@ func main() {
 		clinicGroup.POST("/patients/sync", clinicHandler.SyncPatient)
 		clinicGroup.POST("/exams/ingest", clinicHandler.IngestRecord)
 		clinicGroup.POST("/access-codes/redeem", accessCodeHandler.Redeem)
+		clinicGroup.POST("/patients/:id/break-glass", clinicHandler.BreakGlass)
 		clinicGroup.GET("/patients/:id/fhir-bundle", clinicHandler.FHIRBundle)
 		clinicGroup.GET("/patients/:id/audit", clinicHandler.PatientAudit)
 	}
