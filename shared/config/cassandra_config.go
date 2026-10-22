@@ -42,10 +42,20 @@ func CassandraConnect() *DbClient {
 	cluster.Timeout = 10 * time.Second
 	cluster.SocketKeepalive = 30 * time.Second
 
-	// 1. Criar uma sessão inicial (sem keyspace) para poder criá-lo
-	tempSession, err := cluster.CreateSession()
+	// 1. Criar uma sessão inicial (sem keyspace) com retry para aguardar o Cassandra subir
+	var tempSession *gocql.Session
+	var err error
+	maxRetries := 15
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		tempSession, err = cluster.CreateSession()
+		if err == nil {
+			break
+		}
+		log.Printf("⏳ Tentativa %d/%d: Aguardando Cassandra inicializar (%v)...", attempt, maxRetries, err)
+		time.Sleep(4 * time.Second)
+	}
 	if err != nil {
-		log.Fatalf("❌ Erro fatal ao conectar no Cassandra para setup: %v", err)
+		log.Fatalf("❌ Erro fatal ao conectar no Cassandra para setup após %d tentativas: %v", maxRetries, err)
 	}
 
 	keyspace := os.Getenv("CASSANDRA_CORE_KEYSPACE")
