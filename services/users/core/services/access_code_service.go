@@ -91,12 +91,12 @@ func (s *AccessCodeService) Redeem(ctx context.Context, cpf, code string, record
 		return p.Id, time.Time{}, fmt.Errorf("falha ao registrar auditoria: %w", err)
 	}
 
-	validUntil := row.ExpiresAt
-	if _, err := s.Sync.GrantConsent(ctx, p.Id, ScopeClinicalRead, &validUntil); err != nil {
+	// O código só abre o acesso: o consentimento vale até o paciente revogar (sem prazo).
+	if _, err := s.Sync.GrantConsent(ctx, p.Id, ScopeClinicalRead, nil); err != nil {
 		return p.Id, time.Time{}, err
 	}
 	if err := s.DB.WithContext(ctx).Model(&row).Update("used_at", now).Error; err != nil {
 		return p.Id, time.Time{}, err
 	}
-	return p.Id, validUntil, nil
+	return p.Id, time.Time{}, nil
 }
