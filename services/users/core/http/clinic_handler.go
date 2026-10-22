@@ -152,6 +152,35 @@ func (h *ClinicHandler) Login(c *gin.Context) {
 	})
 }
 
+type clinicRefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// Refresh POST /api/clinic/refresh — troca o refresh_token por um novo access_token, para a sessão da clínica não cair a cada 5 minutos.
+func (h *ClinicHandler) Refresh(c *gin.Context) {
+	var req clinicRefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "refresh_token obrigatório"})
+		return
+	}
+	ctx := c.Request.Context()
+	tok, err := h.kc.Client.RefreshToken(ctx, req.RefreshToken, h.kc.ClientID, h.kc.ClientSecret, h.kc.Realm)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "sessão expirada, entre de novo"})
+		return
+	}
+	claims, err := h.kc.VerifyAccessToken(ctx, tok.AccessToken)
+	if err != nil || !isClinicClaims(claims) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "conta não habilitada para clínica"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  tok.AccessToken,
+		"refresh_token": tok.RefreshToken,
+		"expires_in":    tok.ExpiresIn,
+	})
+}
+
 type patientSummary struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`

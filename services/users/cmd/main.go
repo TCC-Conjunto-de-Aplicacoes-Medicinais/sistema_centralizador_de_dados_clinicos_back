@@ -147,6 +147,7 @@ func main() {
 	})
 	router.POST("/api/signup", userHandler.Signup)
 	router.POST("/api/clinic/login", clinicHandler.Login)
+	router.POST("/api/clinic/refresh", clinicHandler.Refresh)
 	router.POST("/api/passkeys/recovery/request", passkeyHandler.RequestRecovery)
 	router.POST("/api/passkeys/recovery/verify", passkeyHandler.VerifyRecovery)
 	router.POST("/api/passkeys/recovery/register/begin", passkeyHandler.BeginRecoveryRegister)
