@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -35,6 +36,7 @@ func (s *AccessAuditService) Record(actor, action, patientID, result string) err
 		`INSERT INTO access_audit_by_actor (actor, event_time, action, patient_id, result) VALUES (?, ?, ?, ?, ?)`,
 		actor, eventTime, action, patientID, result,
 	).Exec(); err != nil {
+		log.Printf("[auditoria] falha ao gravar por ator (%s): %v", action, err)
 		return fmt.Errorf("falha ao gravar auditoria (ator): %w", err)
 	}
 	if patientID != "" {
@@ -42,6 +44,7 @@ func (s *AccessAuditService) Record(actor, action, patientID, result string) err
 			`INSERT INTO access_audit_by_patient (patient_id, event_time, actor, action, result) VALUES (?, ?, ?, ?, ?)`,
 			patientID, eventTime, actor, action, result,
 		).Exec(); err != nil {
+			log.Printf("[auditoria] falha ao gravar por paciente (%s): %v", action, err)
 			return fmt.Errorf("falha ao gravar auditoria (paciente): %w", err)
 		}
 	}
