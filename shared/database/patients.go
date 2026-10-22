@@ -17,6 +17,9 @@ type Patient struct {
 	Gender           string           `gorm:"type:varchar(20)" json:"gender"`
 	Addresses        []PatientAddress `gorm:"foreignKey:PatientID;references:Id" json:"addresses,omitempty"`
 	EmergencyContact string           `gorm:"type:varchar(20)" json:"emergency_contact"`
+	Insurance        string           `gorm:"type:varchar(120)" json:"insurance"`
+	BloodType        string           `gorm:"type:varchar(10)" json:"blood_type"`
+	Allergies        string           `gorm:"type:text" json:"allergies"`
 	CreatedAt        time.Time        `gorm:"type:timestamp;not null;default:CURRENT_TIMESTAMP" json:"created_at"`
 	UpdatedAt        time.Time        `gorm:"type:timestamp;" json:"updated_at"`
 

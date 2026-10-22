@@ -41,6 +41,9 @@ type PatientSyncInput struct {
 	Email     string
 	Phone     string
 	Gender    string
+	Insurance string
+	BloodType string
+	Allergies string
 }
 
 // UpsertPatient cria ou atualiza o paciente identificado pelo CPF (chave única no centralizador).
@@ -72,6 +75,9 @@ func (s *ClinicalSyncService) UpsertPatient(ctx context.Context, in PatientSyncI
 			CPF:       cpf,
 			BirthDate: birth,
 			Gender:    in.Gender,
+			Insurance: in.Insurance,
+			BloodType: in.BloodType,
+			Allergies: in.Allergies,
 		}
 		if in.Phone != "" {
 			p.Phones = []database.PatientPhone{{Id: gocql.TimeUUID().String(), Phone: in.Phone, Principal: true}}
@@ -94,8 +100,27 @@ func (s *ClinicalSyncService) UpsertPatient(ctx context.Context, in PatientSyncI
 	if in.Gender != "" {
 		updates["gender"] = in.Gender
 	}
+	// Campos vazios não apagam o cadastro (o envio de prontuário não traz esses dados).
+	if in.Insurance != "" {
+		updates["insurance"] = in.Insurance
+	}
+	if in.BloodType != "" {
+		updates["blood_type"] = in.BloodType
+	}
+	if in.Allergies != "" {
+		updates["allergies"] = in.Allergies
+	}
 	if err := s.DB.WithContext(ctx).Model(&p).Updates(updates).Error; err != nil {
 		return nil, fmt.Errorf("falha ao atualizar paciente: %w", err)
+	}
+	// Telefone e e-mail principais são substituídos pelos enviados pela clínica.
+	if in.Phone != "" {
+		s.DB.WithContext(ctx).Where("patient_id = ? AND principal = ?", p.Id, true).Delete(&database.PatientPhone{})
+		s.DB.WithContext(ctx).Create(&database.PatientPhone{Id: gocql.TimeUUID().String(), PatientID: p.Id, Phone: in.Phone, Principal: true})
+	}
+	if in.Email != "" {
+		s.DB.WithContext(ctx).Where("patient_id = ? AND principal = ?", p.Id, true).Delete(&database.PatientEmail{})
+		s.DB.WithContext(ctx).Create(&database.PatientEmail{Id: gocql.TimeUUID().String(), PatientID: p.Id, Email: in.Email, Principal: true})
 	}
 	return &p, nil
 }
@@ -221,7 +246,7 @@ func (s *ClinicalSyncService) BuildDemoBundle(ctx context.Context, patientID str
 
 func (s *ClinicalSyncService) buildBundle(ctx context.Context, patientID string) (map[string]interface{}, error) {
 	var p database.Patient
-	if err := s.DB.WithContext(ctx).Where("id = ?", patientID).First(&p).Error; err != nil {
+	if err := s.DB.WithContext(ctx).Preload("Phones").Preload("Emails").Where("id = ?", patientID).First(&p).Error; err != nil {
 		return nil, ErrPatientNotFound
 	}
 
@@ -329,6 +354,17 @@ func examResource(e database.Exam) map[string]interface{} {
 }
 
 func patientResource(p database.Patient) map[string]interface{} {
+	telecom := []map[string]string{}
+	for _, ph := range p.Phones {
+		if ph.Principal {
+			telecom = append(telecom, map[string]string{"system": "phone", "value": ph.Phone})
+		}
+	}
+	for _, em := range p.Emails {
+		if em.Principal {
+			telecom = append(telecom, map[string]string{"system": "email", "value": em.Email})
+		}
+	}
 	return map[string]interface{}{
 		"resourceType": "Patient",
 		"id":           p.Id,
@@ -336,8 +372,22 @@ func patientResource(p database.Patient) map[string]interface{} {
 		"name":         []map[string]string{{"text": p.Name}},
 		"birthDate":    p.BirthDate.Format("2006-01-02"),
 		"gender":       p.Gender,
+		"telecom":      telecom,
+		// Dados que o FHIR básico não cobre: extensões com URL própria do POHINC.
+		"extension": []map[string]string{
+			{"url": PatientExtInsurance, "valueString": p.Insurance},
+			{"url": PatientExtBloodType, "valueString": p.BloodType},
+			{"url": PatientExtAllergies, "valueString": p.Allergies},
+		},
 	}
 }
+
+// URLs das extensões FHIR do cadastro do paciente (compartilhadas entre centralizador e clínicas).
+const (
+	PatientExtInsurance = "http://pohinc.com.br/fhir/StructureDefinition/insurance"
+	PatientExtBloodType = "http://pohinc.com.br/fhir/StructureDefinition/blood-type"
+	PatientExtAllergies = "http://pohinc.com.br/fhir/StructureDefinition/allergies"
+)
 
 func parseBirthDate(raw string) (time.Time, error) {
 	raw = strings.TrimSpace(raw)

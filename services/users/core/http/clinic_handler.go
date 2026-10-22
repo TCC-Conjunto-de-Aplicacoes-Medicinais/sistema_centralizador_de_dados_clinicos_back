@@ -198,6 +198,9 @@ type patientSyncRequest struct {
 	Email     string `json:"email"`
 	Phone     string `json:"phone"`
 	Gender    string `json:"gender"`
+	Insurance string `json:"insurance"`
+	BloodType string `json:"blood_type"`
+	Allergies string `json:"allergies"`
 }
 
 // SyncPatient POST /api/patients/sync — cria ou atualiza o paciente pelo CPF.
@@ -214,6 +217,9 @@ func (h *ClinicHandler) SyncPatient(c *gin.Context) {
 		Email:     req.Email,
 		Phone:     req.Phone,
 		Gender:    req.Gender,
+		Insurance: req.Insurance,
+		BloodType: req.BloodType,
+		Allergies: req.Allergies,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
